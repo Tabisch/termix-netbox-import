@@ -58,3 +58,7 @@ aren't obvious from the code, and anything that has bitten you before.
   (`users:impersonate`). A failed sync still records `lastSyncAt`, so it retries after the interval.
 - Only name, ip, folder, notes and tags are updated on existing hosts (plus port/username when a custom
   field names them). Auth is set once on create so users can change it.
+- Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
+  `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
+  It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and
+  derives the index's `publicKey` from that same secret. Changing the secret breaks every install.

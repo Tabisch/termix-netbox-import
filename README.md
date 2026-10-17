@@ -31,9 +31,39 @@ How to use it is in [docs/index.md](docs/index.md).
 
 <br />
 
-## Install
+## Install from GitHub
 
-Releases are built by the Release workflow as `netbox-sync-<version>.tmxplug`. In Termix, turn on Plugin developer mode under Settings, General, then install the file from Plugins, Install from file.
+This repo is its own Termix plugin registry. Add it once and Termix installs the plugin straight from the GitHub releases and offers every new version under Updates.
+
+1. In Termix, open Plugins, Registries and press Add registry.
+2. Paste this URL and press Check:
+
+   ```
+   https://raw.githubusercontent.com/Tabisch/termix-netbox-import/registry/index.json
+   ```
+
+3. Check that the key id Termix shows matches the one in the latest [Registry workflow run](https://github.com/Tabisch/termix-netbox-import/actions/workflows/registry.yml) summary, then press Trust and add.
+4. Open Browse, find NetBox Sync and press Install. Approve the capabilities it asks for.
+
+You can also download `netbox-sync-<version>.tmxplug` from [Releases](https://github.com/Tabisch/termix-netbox-import/releases) and install it from Plugins, Install from file, with Plugin developer mode on under Settings, General. A plugin installed that way doesn't update on its own.
+
+### Setting up the registry (maintainers)
+
+The registry needs one signing key, done once:
+
+1. Make an Ed25519 key, on any machine:
+
+   ```bash
+   npx termix-plugin keygen --out ./keys
+   # or, without Node:
+   mkdir -p keys && openssl genpkey -algorithm ed25519 -outform DER | base64 -w0 > keys/termix-plugin-signing.key
+   ```
+
+2. In the repo on GitHub, open Settings, Secrets and variables, Actions, and add a secret named `TERMIX_PLUGIN_SIGNING_KEY` with the contents of `keys/termix-plugin-signing.key`. Then delete the file. Anyone with this key can publish plugins your registry's users will trust. If you change it later, everyone has to remove and add the registry again.
+3. Release a version: make a `dev-X.Y.Z` branch from `main`, then run the Release workflow from it in Actions. It signs the `.tmxplug`, publishes the GitHub release and merges into `main`.
+4. The Registry workflow runs after it and writes `index.json` to the `registry` branch. Its run summary shows the registry URL and the key id. Run it by hand from Actions at any time to rebuild the index.
+
+Only signed releases are listed. The index's public key is derived from the secret, so there is nothing else to keep in sync.
 
 <br />
 

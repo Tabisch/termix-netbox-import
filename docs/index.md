@@ -2,7 +2,7 @@ NetBox Sync keeps your Termix hosts in sync with the devices and virtual machine
 
 ## Turn it on
 
-1. Install NetBox Sync from the Plugins tab.
+1. Install NetBox Sync. In Plugins, Registries, press Add registry, paste `https://raw.githubusercontent.com/Tabisch/termix-netbox-import/registry/index.json` and press Trust and add. Then find NetBox Sync under Browse and press Install. New versions show up under Updates.
 2. Open the NetBox Sync tab from the sidebar. It needs the Use NetBox Sync permission, which only admins get by default. Give it to other roles under Roles if they should sync too.
 3. In NetBox, make an API token under your user, API Tokens. A read only token is enough.
 4. In the Connection section, enter the NetBox URL and paste the token. Press Test connection to check them, then Save.
