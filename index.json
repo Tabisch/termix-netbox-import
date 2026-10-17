@@ -4,18 +4,18 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-17T21:07:42.903Z",
+  "updatedAt": "2026-10-17T21:22:04.213Z",
   "plugins": [
     {
       "id": "netbox-sync",
       "name": "NetBox Sync",
-      "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags.",
+      "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
       "author": "tabisch",
       "category": "Infrastructure",
       "repository": "https://github.com/tabisch/termix-netbox-import",
       "icon": "Network",
       "features": [
-        "Import NetBox devices and virtual machines as hosts",
+        "Import NetBox devices, virtual machines and IP addresses as hosts",
         "Pick what to sync by NetBox tags, match any or all of them",
         "Exclude tags and filter by status",
         "Preview changes before a sync",
@@ -24,6 +24,28 @@
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.1.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.1.0/netbox-sync-1.1.0.tmxplug",
+          "sha256": "45cf30af25a15f6042b926ad3fde787527cb513f80ae2a9979e0b18bdb16270e",
+          "signature": "P5j4nDzLwIIQLDNxZ+aferw/SdBQ+yrBOF7dOOClhlQOhR8ZQsl+fTfvI9oarrPxBmm7s0yDFaNiG7zUX+6gAw==",
+          "size": 53593,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.1.0",
+          "notes": "### Added\n\n- Sync IPAM IP addresses as hosts, filtered by the same tags and statuses. A host is named after the address's DNS name, then the device or VM it is assigned to, then the address. Addresses that are already a synced device's or VM's primary IP are skipped\n\n### Fixed\n\n- Tags can be given by their NetBox name as well as their slug\n- A tag NetBox doesn't have is named in the error instead of \"NetBox answered with an error\"\n- NetBox's own error message is shown when it refuses a request\n",
+          "publishedAt": "2026-10-17T21:21:47.000Z"
+        },
         {
           "version": "1.0.0",
           "api": "1",
