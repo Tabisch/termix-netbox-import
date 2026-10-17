@@ -1,7 +1,7 @@
 {
   "id": "netbox-sync",
   "name": "NetBox Sync",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
   "author": {
     "name": "tabisch",
@@ -18,6 +18,7 @@
     "Exclude tags and filter by status",
     "Preview changes before a sync",
     "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
+    "Remove old entries automatically after a grace period",
     "Folders from site, role, tenant, platform or cluster"
   ],
   "env": [],

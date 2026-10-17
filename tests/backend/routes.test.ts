@@ -254,6 +254,52 @@ describe("netbox-sync routes", () => {
     expect((await owned()).map((h) => h.name)).not.toContain("vm-1");
   });
 
+  it("auto removes a host once it has been missing long enough", async () => {
+    await configure({ autoRemove: true, removeAfterDays: 7 });
+    await request("POST", "/sync");
+    netbox.vms = [];
+
+    const first = await request("POST", "/sync");
+    expect(first.body).toMatchObject({ missing: 1, deleted: 0 });
+    expect((await owned()).map((h) => h.name)).toContain("vm-1");
+
+    // Still within the grace period.
+    const second = await request("POST", "/sync");
+    expect(second.body).toMatchObject({ missing: 1, deleted: 0 });
+
+    // Eight days later.
+    db.sqlite
+      .prepare("UPDATE p_netbox_sync_links SET missing_since = ?")
+      .run(new Date(Date.now() - 8 * 86_400_000).toISOString());
+    const preview = await request("POST", "/preview");
+    expect(preview.body).toMatchObject({ deleted: 1 });
+    const third = await request("POST", "/sync");
+    expect(third.body).toMatchObject({ missing: 0, deleted: 1 });
+    expect((await owned()).map((h) => h.name)).not.toContain("vm-1");
+  });
+
+  it("auto removes right away with 0 days", async () => {
+    await configure({ autoRemove: true, removeAfterDays: 0 });
+    await request("POST", "/sync");
+    netbox.vms = [];
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ deleted: 1 });
+  });
+
+  it("forgets the missing date when an object comes back", async () => {
+    await configure({ autoRemove: true, removeAfterDays: 7 });
+    await request("POST", "/sync");
+    const vms = netbox.vms;
+    netbox.vms = [];
+    await request("POST", "/sync");
+    netbox.vms = vms;
+    await request("POST", "/sync");
+    const rows = db.sqlite
+      .prepare("SELECT missing_since FROM p_netbox_sync_links")
+      .all() as Array<{ missing_since: string | null }>;
+    expect(rows.every((row) => row.missing_since === null)).toBe(true);
+  });
+
   it("links an existing host with the same address", async () => {
     const existing = await mock.ctx.asUser("user-1", () =>
       mock.ctx.hosts.create({

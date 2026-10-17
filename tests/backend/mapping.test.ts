@@ -11,7 +11,11 @@ import {
   stripPrefix,
   webUrl,
 } from "../../src/backend/mapping.js";
-import { planCreate, planUpdate } from "../../src/backend/sync.js";
+import {
+  planCreate,
+  planUpdate,
+  shouldRemove,
+} from "../../src/backend/sync.js";
 import { device, ipAddress } from "./fake-netbox.js";
 
 const config = normalizeConfig({ netboxUrl: "https://netbox.internal" });
@@ -228,5 +232,46 @@ describe("planning", () => {
       patch: { ip: "10.0.0.5" },
       changes: ["ip"],
     });
+  });
+});
+
+describe("auto remove", () => {
+  const now = "2026-10-20T12:00:00.000Z";
+  const base = { missingAction: "tag" as const, autoRemove: true };
+
+  it("waits the set number of days from when the host went missing", () => {
+    const opts = { ...base, removeAfterDays: 7 };
+    expect(shouldRemove(opts, null, now)).toBe(false);
+    expect(shouldRemove(opts, "2026-10-14T12:00:00.000Z", now)).toBe(false);
+    expect(shouldRemove(opts, "2026-10-13T12:00:00.000Z", now)).toBe(true);
+  });
+
+  it("removes right away with 0 days or the delete action", () => {
+    expect(shouldRemove({ ...base, removeAfterDays: 0 }, null, now)).toBe(true);
+    expect(
+      shouldRemove(
+        { missingAction: "delete", autoRemove: false, removeAfterDays: 7 },
+        null,
+        now,
+      ),
+    ).toBe(true);
+  });
+
+  it("never removes with the toggle off", () => {
+    expect(
+      shouldRemove(
+        { ...base, autoRemove: false, removeAfterDays: 0 },
+        "2020-01-01T00:00:00.000Z",
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses an out of range number of days", () => {
+    expect(
+      validateConfig(
+        normalizeConfig({ ...config, autoRemove: true, removeAfterDays: 400 }),
+      ).removeAfterDays,
+    ).toBe("invalidRemoveAfter");
   });
 });

@@ -50,6 +50,12 @@ export interface SyncConfig {
   /** Link an unlinked host with the same address instead of adding another. */
   adoptExisting: boolean;
   missingAction: MissingAction;
+  /**
+   * Delete a host once it has been missing from NetBox (or the filter) for
+   * removeAfterDays. Until then missingAction applies. 0 deletes right away.
+   */
+  autoRemove: boolean;
+  removeAfterDays: number;
   autoSync: boolean;
   intervalMinutes: number;
 }
@@ -57,6 +63,7 @@ export interface SyncConfig {
 export const MISSING_TAG = "netbox-missing";
 export const MIN_INTERVAL_MINUTES = 5;
 export const MAX_INTERVAL_MINUTES = 7 * 24 * 60;
+export const MAX_REMOVE_AFTER_DAYS = 365;
 
 export const DEFAULT_CONFIG: SyncConfig = {
   netboxUrl: "",
@@ -81,6 +88,8 @@ export const DEFAULT_CONFIG: SyncConfig = {
   syncNotes: true,
   adoptExisting: true,
   missingAction: "tag",
+  autoRemove: false,
+  removeAfterDays: 7,
   autoSync: false,
   intervalMinutes: 60,
 };
@@ -158,6 +167,10 @@ export function normalizeConfig(input: unknown): SyncConfig {
     syncNotes: bool(raw.syncNotes, d.syncNotes),
     adoptExisting: bool(raw.adoptExisting, d.adoptExisting),
     missingAction: oneOf(raw.missingAction, MISSING_ACTIONS, d.missingAction),
+    autoRemove: bool(raw.autoRemove, d.autoRemove),
+    removeAfterDays: Number.isFinite(Number(raw.removeAfterDays))
+      ? Math.trunc(Number(raw.removeAfterDays))
+      : d.removeAfterDays,
     autoSync: bool(raw.autoSync, d.autoSync),
     intervalMinutes: Number.isFinite(interval)
       ? Math.trunc(interval)
@@ -197,6 +210,12 @@ export function validateConfig(config: SyncConfig): ConfigErrors {
     config.intervalMinutes > MAX_INTERVAL_MINUTES
   ) {
     errors.intervalMinutes = "invalidInterval";
+  }
+  if (
+    config.removeAfterDays < 0 ||
+    config.removeAfterDays > MAX_REMOVE_AFTER_DAYS
+  ) {
+    errors.removeAfterDays = "invalidRemoveAfter";
   }
   if (config.caCert && !config.caCert.includes("-----BEGIN CERTIFICATE-----")) {
     errors.caCert = "invalidCertificate";

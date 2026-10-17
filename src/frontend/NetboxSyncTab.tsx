@@ -290,7 +290,7 @@ export function createNetboxSyncTab(app: TermixApp) {
 
     const syncNow = async () => {
       if (dirty && !(await save())) return;
-      if (config.missingAction === "delete") {
+      if (config.missingAction === "delete" || config.autoRemove) {
         setBusy("preview");
         let planned: SyncResult;
         try {
@@ -649,6 +649,25 @@ export function createNetboxSyncTab(app: TermixApp) {
                   label: t(`fields.missingAction.${value}`),
                 }))}
               />
+              {config.missingAction !== "delete" && (
+                <SwitchRow
+                  label={t("fields.autoRemove.label")}
+                  description={t("fields.autoRemove.description")}
+                  checked={config.autoRemove}
+                  onChange={(value) => update("autoRemove", value)}
+                />
+              )}
+              {config.missingAction !== "delete" && config.autoRemove && (
+                <NumberField
+                  label={t("fields.removeAfterDays.label")}
+                  hint={t("fields.removeAfterDays.hint")}
+                  value={config.removeAfterDays}
+                  min={0}
+                  max={365}
+                  onChange={(value) => update("removeAfterDays", value)}
+                  error={errorText("removeAfterDays")}
+                />
+              )}
             </div>
           </SectionCard>
 
