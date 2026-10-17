@@ -8,7 +8,10 @@
 // derived from that same key, so the repo needs only one secret. Releases
 // that are unsigned or signed with another key are left out.
 //
-// Usage: node scripts/build-registry.mjs <out-file>
+// A release built without the key (no .sig) is signed here and gets its .sig
+// attached when --sign-missing is passed.
+//
+// Usage: node scripts/build-registry.mjs <out-file> [--sign-missing]
 // Env: GITHUB_REPOSITORY (owner/repo), GH_TOKEN, TERMIX_PLUGIN_SIGNING_KEY
 
 import crypto from "node:crypto";
@@ -18,8 +21,8 @@ import path from "node:path";
 // DER prefix of an Ed25519 SubjectPublicKeyInfo; the raw 32-byte key follows.
 const SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
 
-/** The raw base64 public key of a base64 PKCS8 DER or PEM private key. */
-export function publicKeyFromPrivate(value) {
+/** A base64 PKCS8 DER (what keygen writes) or PEM Ed25519 private key. */
+function loadPrivateKey(value) {
   const trimmed = (value ?? "").trim();
   if (!trimmed) throw new Error("TERMIX_PLUGIN_SIGNING_KEY is not set");
   const privateKey = trimmed.startsWith("-----BEGIN")
@@ -32,8 +35,13 @@ export function publicKeyFromPrivate(value) {
   if (privateKey.asymmetricKeyType !== "ed25519") {
     throw new Error("The signing key must be an Ed25519 key");
   }
+  return privateKey;
+}
+
+/** The raw base64 public key of a base64 PKCS8 DER or PEM private key. */
+export function publicKeyFromPrivate(value) {
   const der = crypto
-    .createPublicKey(privateKey)
+    .createPublicKey(loadPrivateKey(value))
     .export({ format: "der", type: "spki" });
   return der.subarray(SPKI_PREFIX.length).toString("base64");
 }
@@ -44,6 +52,12 @@ export function keyId(publicKey) {
     .update(Buffer.from(publicKey, "base64"))
     .digest("hex")
     .slice(0, 16);
+}
+
+/** Ed25519 over the raw sha256 of the file, base64, like termix-plugin sign. */
+function sign(buffer, privateKey) {
+  const digest = crypto.createHash("sha256").update(buffer).digest();
+  return crypto.sign(null, digest, privateKey).toString("base64");
 }
 
 function verify(buffer, signature, publicKey) {
@@ -98,6 +112,10 @@ function compareVersions(a, b) {
  * releases: GitHub release objects. download(url) gives a Buffer;
  * readManifest(tag) gives the manifest.json at that tag. Both are injected
  * so the logic can run without GitHub.
+ *
+ * With uploadSignature(release, name, text), a release that has a .tmxplug
+ * but no .sig is signed here and the .sig is attached to it, so a release
+ * built without the key still gets listed.
  */
 export async function buildIndex({
   releases,
@@ -105,9 +123,11 @@ export async function buildIndex({
   readManifest,
   signingKey,
   repository,
+  uploadSignature,
   log = console.log,
   now = new Date(),
 }) {
+  const privateKey = loadPrivateKey(signingKey);
   const publicKey = publicKeyFromPrivate(signingKey);
   const entries = [];
 
@@ -117,14 +137,21 @@ export async function buildIndex({
     const version = String(tag).replace(/^v/, "");
     const plug = release.assets.find((a) => a.name.endsWith(".tmxplug"));
     const sig = release.assets.find((a) => a.name.endsWith(".tmxplug.sig"));
-    if (!plug || !sig) {
+    if (!plug || (!sig && !uploadSignature)) {
       log(`skip ${tag}: no signed .tmxplug`);
       continue;
     }
     const buffer = await download(plug.browser_download_url);
-    const signature = (await download(sig.browser_download_url))
-      .toString("utf8")
-      .trim();
+    let signature;
+    if (sig) {
+      signature = (await download(sig.browser_download_url))
+        .toString("utf8")
+        .trim();
+    } else {
+      signature = sign(buffer, privateKey);
+      await uploadSignature(release, `${plug.name}.sig`, `${signature}\n`);
+      log(`sign ${tag}: attached ${plug.name}.sig`);
+    }
     if (!verify(buffer, signature, publicKey)) {
       log(`skip ${tag}: not signed with this registry's key`);
       continue;
@@ -207,7 +234,7 @@ export async function buildIndex({
 }
 
 async function main() {
-  const out = process.argv[2];
+  const out = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
   if (!out) throw new Error("Pass the file to write, like registry/index.json");
   const repository = process.env.GITHUB_REPOSITORY;
   if (!repository) throw new Error("GITHUB_REPOSITORY is not set");
@@ -240,6 +267,23 @@ async function main() {
     releases,
     repository,
     signingKey: process.env.TERMIX_PLUGIN_SIGNING_KEY,
+    uploadSignature: process.argv.includes("--sign-missing")
+      ? async (release, name, text) => {
+          const response = await fetch(
+            `https://uploads.github.com/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
+            {
+              method: "POST",
+              headers: { ...headers, "Content-Type": "text/plain" },
+              body: text,
+            },
+          );
+          if (!response.ok) {
+            throw new Error(
+              `${response.status} attaching ${name} to ${release.tag_name}`,
+            );
+          }
+        }
+      : undefined,
     download: async (url) =>
       Buffer.from(
         await (

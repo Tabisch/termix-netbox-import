@@ -63,7 +63,7 @@ The registry needs one signing key, done once:
 3. Release a version: make a `dev-X.Y.Z` branch from `main`, then run the Release workflow from it in Actions. It signs the `.tmxplug`, publishes the GitHub release and merges into `main`.
 4. The Registry workflow runs after it and writes `index.json` to the `registry` branch. Its run summary shows the registry URL and the key id. Run it by hand from Actions at any time to rebuild the index.
 
-Only signed releases are listed. The index's public key is derived from the secret, so there is nothing else to keep in sync.
+The Registry workflow signs any release that has no `.sig` yet (for example one built before the secret existed) and attaches the `.sig` to it, so every release gets listed. The index's public key is derived from the secret, so there is nothing else to keep in sync.
 
 <br />
 
