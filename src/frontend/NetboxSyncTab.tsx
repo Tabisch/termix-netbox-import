@@ -323,7 +323,12 @@ export function createNetboxSyncTab(app: TermixApp) {
         setResultAt(new Date().toISOString());
         notifyHostsChanged();
         toast.success(
-          t("toast.synced", { created: data.created, updated: data.updated }),
+          t("toast.synced", {
+            created: data.created,
+            updated: data.updated + data.adopted,
+            deleted: data.deleted,
+            missing: data.missing,
+          }),
         );
       } catch (error) {
         fail(error);

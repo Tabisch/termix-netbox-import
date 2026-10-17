@@ -163,7 +163,7 @@
     "saved": "Settings saved.",
     "forgotten": "NetBox disconnected.",
     "testOk": "Connected to NetBox {{version}}.",
-    "synced": "Sync done: {{created}} added, {{updated}} updated."
+    "synced": "Sync done: {{created}} added, {{updated}} updated, {{deleted}} removed, {{missing}} missing."
   },
   "result": {
     "never": "No sync has run yet.",
