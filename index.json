@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-17T21:31:57.877Z",
+  "updatedAt": "2026-10-17T21:44:20.531Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -25,6 +25,28 @@
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.2.1",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.2.1/netbox-sync-1.2.1.tmxplug",
+          "sha256": "9af57c0edd7d03d06d07ab2defa5abec7bbb8f36059aa48c42a1347e799eebd2",
+          "signature": "5PwbN0gOQLIvr8K0+ZBKpaH30X5Grsw1oCF2pNHty5ag//OUzWp2GBqVRs4RWJgHs9S33f/g3aZyZ0/Tg/8hDQ==",
+          "size": 55132,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.2.1",
+          "notes": "### Fixed\n\n- The message after Sync now also shows how many hosts were removed and how many are missing from NetBox\n",
+          "publishedAt": "2026-10-17T21:44:04.000Z"
+        },
         {
           "version": "1.2.0",
           "api": "1",
