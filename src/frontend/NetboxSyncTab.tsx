@@ -231,7 +231,10 @@ export function createNetboxSyncTab(app: TermixApp) {
       if (Object.keys(failure.fieldErrors).length) {
         setErrors(failure.fieldErrors);
       }
-      const known = t(`errors.${failure.code}`, { defaultValue: "" });
+      const known = t(`errors.${failure.code}`, {
+        defaultValue: "",
+        detail: failure.detail,
+      });
       toast.error(known || failure.message || t("errors.unknown"));
     };
 

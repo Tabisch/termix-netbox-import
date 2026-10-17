@@ -32,7 +32,9 @@ function sendFailure(res: Response, error: unknown): boolean {
     return true;
   }
   if (error instanceof NetboxError) {
-    res.status(424).json({ error: error.message, code: error.code });
+    res
+      .status(424)
+      .json({ error: error.message, code: error.code, detail: error.detail });
     return true;
   }
   return false;

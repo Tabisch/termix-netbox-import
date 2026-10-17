@@ -51,6 +51,9 @@ aren't obvious from the code, and anything that has bitten you before.
 - `links.managedTags` are the tags the last sync wrote. The next sync replaces them and keeps every other
   tag, so tags users add by hand survive.
 - NetBox ANDs repeated `tag` filters, so "any" runs one query per tag and merges by id.
+- NetBox filters by tag slug only and answers 400 for a slug it doesn't know. `resolveTags` reads
+  `/api/extras/tags/` first, maps names and slugs (any case) to slugs, and reports unknown ones as
+  `unknownTag`. Other 4xx/5xx carry NetBox's own text in `detail`, shown in the tab.
 - NetBox is almost always private: `ctx.fetch` gets `allowPrivateHosts` with only the configured host.
   That is why the `use` permission is admin only by default.
 - NetBox failures answer 424 with a `code`, never a 5xx, so a down NetBox can't use up the error budget.

@@ -13,6 +13,16 @@ export interface FakeNetbox {
 
 export const NETBOX_URL = "https://netbox.internal";
 
+const STATUSES = [
+  "offline",
+  "active",
+  "planned",
+  "staged",
+  "failed",
+  "inventory",
+  "decommissioning",
+];
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -46,6 +56,14 @@ export function createFakeNetbox(
       if (parsed.pathname === "/api/status/") {
         return json(200, { "netbox-version": "4.2.1" });
       }
+      const allTags = new Map<string, { name?: string; slug?: string }>();
+      for (const object of [...fake.devices, ...fake.vms]) {
+        for (const tag of object.tags ?? []) allTags.set(tag.slug!, tag);
+      }
+      if (parsed.pathname === "/api/extras/tags/") {
+        const results = [...allTags.values()];
+        return json(200, { count: results.length, results });
+      }
       const list =
         parsed.pathname === "/api/dcim/devices/"
           ? fake.devices
@@ -55,6 +73,23 @@ export function createFakeNetbox(
       if (!list) return json(404, { detail: "Not found." });
       const tags = parsed.searchParams.getAll("tag");
       const statuses = parsed.searchParams.getAll("status");
+      // NetBox refuses filter values it doesn't know with a 400.
+      const unknownTag = tags.find((tag) => !allTags.has(tag));
+      if (unknownTag) {
+        return json(400, {
+          tag: [
+            `Select a valid choice. ${unknownTag} is not one of the available choices.`,
+          ],
+        });
+      }
+      const unknownStatus = statuses.find((s) => !STATUSES.includes(s));
+      if (unknownStatus) {
+        return json(400, {
+          status: [
+            `Select a valid choice. ${unknownStatus} is not one of the available choices.`,
+          ],
+        });
+      }
       const matching = list.filter(
         (object) =>
           tags.every((tag) =>

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1
+
+### Fixed
+
+- Tags can be given by their NetBox name as well as their slug
+- A tag NetBox doesn't have is named in the error instead of "NetBox answered with an error"
+- NetBox's own error message is shown when it refuses a request
+
 ## 1.0.0
 
 ### Added

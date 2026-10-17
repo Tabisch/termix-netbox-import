@@ -61,9 +61,16 @@ const MAX_PAGES = 400;
 export class NetboxError extends Error {
   constructor(
     readonly code:
-      "unauthorized" | "notFound" | "badResponse" | "unreachable" | "httpError",
+      | "unauthorized"
+      | "notFound"
+      | "badResponse"
+      | "unreachable"
+      | "httpError"
+      | "unknownTag",
     message: string,
     readonly status?: number,
+    /** What NetBox said, or the tags it doesn't have, for the frontend. */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = "NetboxError";
@@ -73,6 +80,35 @@ export class NetboxError extends Error {
 /** NetBox 4.5 v2 tokens start with nbt_ and use Bearer, older ones Token. */
 export function authorizationHeader(token: string): string {
   return token.startsWith("nbt_") ? `Bearer ${token}` : `Token ${token}`;
+}
+
+/**
+ * NetBox's own explanation of an error response: {"detail": "..."} or field
+ * errors like {"tag": ["Select a valid choice. x is not one of ..."]}.
+ */
+export function errorDetail(body: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return body
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 300);
+  }
+  const parts: string[] = [];
+  const walk = (value: unknown, key?: string) => {
+    if (typeof value === "string") {
+      parts.push(key && key !== "detail" ? `${key}: ${value}` : value);
+    } else if (Array.isArray(value)) {
+      for (const item of value) walk(item, key);
+    } else if (value && typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) walk(v, k);
+    }
+  };
+  walk(parsed);
+  return parts.join("; ").slice(0, 300);
 }
 
 export interface NetboxClientOptions {
@@ -131,10 +167,12 @@ export class NetboxClient {
       );
     }
     if (!response.ok) {
+      const detail = errorDetail(await response.text().catch(() => ""));
       throw new NetboxError(
         "httpError",
-        `NetBox answered ${response.status} for ${path}`,
+        `NetBox answered ${response.status} for ${path}${detail ? `: ${detail}` : ""}`,
         response.status,
+        detail || `HTTP ${response.status}`,
       );
     }
     try {
@@ -155,6 +193,58 @@ export class NetboxClient {
     > | null;
     const version = body?.["netbox-version"];
     return { version: typeof version === "string" ? version : null };
+  }
+
+  /**
+   * The slugs for tags given by slug or by name, any case. NetBox only
+   * filters by slug and answers 400 for one it doesn't know, so unknown tags
+   * are reported by name here instead.
+   */
+  async resolveTags(tags: string[]): Promise<string[]> {
+    if (tags.length === 0) return [];
+    const bySlugOrName = new Map<string, string>();
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(page * PAGE_SIZE),
+      });
+      const body = (await this.getJson("/api/extras/tags/", params)) as {
+        count?: number;
+        results?: unknown;
+      } | null;
+      if (!body || !Array.isArray(body.results)) {
+        throw new NetboxError(
+          "badResponse",
+          "NetBox sent an unexpected list for /api/extras/tags/",
+        );
+      }
+      for (const tag of body.results as NetboxTag[]) {
+        if (!tag?.slug) continue;
+        bySlugOrName.set(tag.slug.toLowerCase(), tag.slug);
+        if (tag.name && !bySlugOrName.has(tag.name.toLowerCase())) {
+          bySlugOrName.set(tag.name.toLowerCase(), tag.slug);
+        }
+      }
+      const total = typeof body.count === "number" ? body.count : 0;
+      if (
+        body.results.length < PAGE_SIZE ||
+        page * PAGE_SIZE + body.results.length >= total
+      ) {
+        break;
+      }
+    }
+    const missing = tags.filter((tag) => !bySlugOrName.has(tag.toLowerCase()));
+    if (missing.length) {
+      throw new NetboxError(
+        "unknownTag",
+        `NetBox has no tag ${missing.join(", ")}`,
+        undefined,
+        missing.join(", "),
+      );
+    }
+    return [
+      ...new Set(tags.map((tag) => bySlugOrName.get(tag.toLowerCase())!)),
+    ];
   }
 
   private async listAll(
@@ -234,6 +324,7 @@ export class NetboxClient {
   }
 
   async listItems(config: SyncConfig): Promise<NetboxItem[]> {
+    config = { ...config, tags: await this.resolveTags(config.tags) };
     const items: NetboxItem[] = [];
     if (config.devices) {
       for (const object of await this.listObjects("device", config)) {

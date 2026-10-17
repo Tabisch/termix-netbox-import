@@ -290,6 +290,21 @@ describe("netbox-sync routes", () => {
     expect(body).toMatchObject({ created: 1, unchanged: 2 });
   });
 
+  it("accepts tag names as well as slugs", async () => {
+    // The fake names each tag after its slug in upper case.
+    await configure({ tags: ["TERMIX"] });
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ created: 3, errors: [] });
+  });
+
+  it("names a tag NetBox doesn't have", async () => {
+    await configure({ tags: ["termix", "Prod Servers"] });
+    const { status, body } = await request("POST", "/sync");
+    expect(status).toBe(424);
+    expect(body).toMatchObject({ code: "unknownTag", detail: "Prod Servers" });
+    expect(await owned()).toHaveLength(0);
+  });
+
   it("matches all tags when asked", async () => {
     await configure({ tags: ["termix", "web"], tagMatch: "all" });
     const { body } = await request("POST", "/sync");

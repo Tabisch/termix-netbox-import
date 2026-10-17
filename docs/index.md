@@ -14,7 +14,7 @@ Each user syncs into hosts they own, with their own settings and token. The toke
 In What to sync:
 
 - Turn Devices and Virtual machines on or off.
-- Add the tag slugs to sync under Tags. With Any tag, an object with at least one of them is synced. With All tags, only objects with every one of them are. Leave Tags empty to sync every object.
+- Add the tags to sync under Tags, by their NetBox name or slug. With Any tag, an object with at least one of them is synced. With All tags, only objects with every one of them are. Leave Tags empty to sync every object.
 - Objects with a tag under Skip objects with these tags are never synced.
 - Statuses limits the sync to objects with that NetBox status. It is `active` to start with. Leave it empty for every status.
 

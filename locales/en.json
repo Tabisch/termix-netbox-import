@@ -43,7 +43,7 @@
     },
     "tags": {
       "label": "Tags",
-      "hint": "NetBox tag slugs. Leave empty to sync every object.",
+      "hint": "NetBox tag names or slugs. Leave empty to sync every object.",
       "placeholder": "Add a tag and press Enter"
     },
     "tagMatch": {
@@ -202,7 +202,8 @@
     "notFound": "NetBox did not answer at this address. Check the URL.",
     "unreachable": "Could not reach NetBox.",
     "badResponse": "NetBox sent an answer this plugin does not understand.",
-    "httpError": "NetBox answered with an error.",
+    "httpError": "NetBox answered with an error: {{detail}}",
+    "unknownTag": "NetBox has no tag {{detail}}. Use the tag's name or slug as NetBox shows it.",
     "unknown": "Something went wrong."
   },
   "permissions": {
