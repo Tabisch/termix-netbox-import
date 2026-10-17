@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Termix-SSH/Termix-Registry/main/registry-index-schema.json",
+  "registry": "termix-netbox-import",
+  "name": "Tabisch/termix-netbox-import",
+  "apiVersion": 1,
+  "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
+  "updatedAt": "2026-10-17T20:51:58.050Z",
+  "plugins": []
+}
