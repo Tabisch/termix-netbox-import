@@ -44,7 +44,8 @@ jobs:
             echo "::error::Add the TERMIX_PLUGIN_SIGNING_KEY secret first. See README.md, Install from GitHub."
             exit 1
           fi
-          node scripts/build-registry.mjs "$RUNNER_TEMP/index.json" | tee "$RUNNER_TEMP/build.log"
+          set -o pipefail
+          node scripts/build-registry.mjs "$RUNNER_TEMP/index.json" --sign-missing | tee "$RUNNER_TEMP/build.log"
 
       - name: Publish to the registry branch
         env:

@@ -62,3 +62,5 @@ aren't obvious from the code, and anything that has bitten you before.
   `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
   It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and
   derives the index's `publicKey` from that same secret. Changing the secret breaks every install.
+  The shared release workflow skipped signing on the first release (`HAS_SIGNING_KEY: false`), so the
+  Registry workflow runs the script with `--sign-missing`: it signs a release without a `.sig` and attaches it.
