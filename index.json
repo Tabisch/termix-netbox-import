@@ -1,9 +1,52 @@
 {
   "$schema": "https://raw.githubusercontent.com/Termix-SSH/Termix-Registry/main/registry-index-schema.json",
-  "registry": "termix-netbox-import",
-  "name": "Tabisch/termix-netbox-import",
+  "registry": "netbox-sync",
+  "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-17T20:51:58.050Z",
-  "plugins": []
+  "updatedAt": "2026-10-17T21:07:42.903Z",
+  "plugins": [
+    {
+      "id": "netbox-sync",
+      "name": "NetBox Sync",
+      "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags.",
+      "author": "tabisch",
+      "category": "Infrastructure",
+      "repository": "https://github.com/tabisch/termix-netbox-import",
+      "icon": "Network",
+      "features": [
+        "Import NetBox devices and virtual machines as hosts",
+        "Pick what to sync by NetBox tags, match any or all of them",
+        "Exclude tags and filter by status",
+        "Preview changes before a sync",
+        "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
+        "Folders from site, role, tenant, platform or cluster"
+      ],
+      "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.0.0/netbox-sync-1.0.0.tmxplug",
+          "sha256": "5e9738ba1102837d499af6fee883e10742ba29f5a1543516b35f3c0a74b27067",
+          "signature": "o69dqp80ndd8VbPjMSB9mvkF8hvXBQUhIvd26qum2NHkCexgWkMOsgH0oGsvuE/cgT4udfr98Cy+ECubUcmNDw==",
+          "size": 50298,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.0.0",
+          "notes": "### Added\n\n- Sync NetBox devices and virtual machines into Termix hosts\n- Filter by tags (any or all), excluded tags and status\n- Preview a sync before running it\n- Sync by hand or automatically on a schedule\n- Keep, tag or delete hosts that leave NetBox\n- Folders from site, role, tenant, platform or cluster\n- SSH port and username from NetBox custom fields\n- Link existing hosts with the same address\n",
+          "publishedAt": "2026-10-17T21:07:29.000Z"
+        }
+      ]
+    }
+  ]
 }
