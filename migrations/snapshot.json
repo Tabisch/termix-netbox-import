@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "tables": {
+    "configs": {
+      "columns": {
+        "id": {
+          "type": "id",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "type": "refUser",
+          "length": 255,
+          "notNull": true
+        },
+        "config": {
+          "type": "json",
+          "notNull": true
+        },
+        "lastSyncAt": {
+          "type": "timestamp"
+        },
+        "lastResult": {
+          "type": "json"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "notNull": true,
+          "defaultNow": true
+        }
+      },
+      "indexes": [
+        {
+          "name": "idx_p_netbox_sync_configs_user_id",
+          "columns": [
+            "userId"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "links": {
+      "columns": {
+        "id": {
+          "type": "id",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "type": "refUser",
+          "length": 255,
+          "notNull": true
+        },
+        "hostId": {
+          "type": "integer",
+          "notNull": true
+        },
+        "kind": {
+          "type": "varchar",
+          "length": 16,
+          "notNull": true
+        },
+        "netboxId": {
+          "type": "integer",
+          "notNull": true
+        },
+        "managedTags": {
+          "type": "json"
+        },
+        "missingSince": {
+          "type": "timestamp"
+        }
+      },
+      "indexes": [
+        {
+          "name": "idx_p_netbox_sync_links_user_id",
+          "columns": [
+            "userId"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "plugin": {
+    "name": "NetBox Sync",
+    "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags."
+  },
+  "tab": {
+    "title": "NetBox Sync",
+    "loading": "Loading…",
+    "loadError": "Could not load the NetBox settings.",
+    "notConfigured": "Connect NetBox to start syncing hosts.",
+    "running": "Syncing…"
+  },
+  "sections": {
+    "connection": "Connection",
+    "filters": "What to sync",
+    "hosts": "New hosts",
+    "updates": "Keeping hosts in sync",
+    "schedule": "Schedule",
+    "result": "Last result"
+  },
+  "fields": {
+    "netboxUrl": {
+      "label": "NetBox URL",
+      "hint": "The address you open NetBox at, like https://netbox.example.com."
+    },
+    "token": {
+      "label": "API token",
+      "hint": "A read only token is enough. Create one in NetBox under your user, API Tokens.",
+      "saved": "A token is saved. Type a new one to replace it.",
+      "placeholder": "Paste a token"
+    },
+    "caCert": {
+      "label": "CA certificate",
+      "hint": "Only for a NetBox with a certificate from your own CA. Paste the PEM."
+    },
+    "devices": {
+      "label": "Devices",
+      "description": "Sync devices from DCIM."
+    },
+    "virtualMachines": {
+      "label": "Virtual machines",
+      "description": "Sync virtual machines from Virtualization."
+    },
+    "tags": {
+      "label": "Tags",
+      "hint": "NetBox tag slugs. Leave empty to sync every object.",
+      "placeholder": "Add a tag and press Enter"
+    },
+    "tagMatch": {
+      "label": "Match",
+      "any": "Any tag",
+      "all": "All tags"
+    },
+    "excludeTags": {
+      "label": "Skip objects with these tags",
+      "placeholder": "Add a tag and press Enter"
+    },
+    "statuses": {
+      "label": "Statuses",
+      "hint": "NetBox status values like active or staged. Leave empty for every status.",
+      "placeholder": "Add a status and press Enter"
+    },
+    "username": {
+      "label": "Username"
+    },
+    "port": {
+      "label": "SSH port"
+    },
+    "authType": {
+      "label": "Authentication",
+      "none": "Ask when connecting",
+      "credential": "Saved SSH key"
+    },
+    "credentialId": {
+      "label": "SSH key",
+      "placeholder": "Pick a key",
+      "empty": "You have no saved SSH keys."
+    },
+    "folderSource": {
+      "label": "Folder",
+      "fixed": "One folder",
+      "site": "Site",
+      "role": "Role",
+      "tenant": "Tenant",
+      "platform": "Platform",
+      "cluster": "Cluster"
+    },
+    "folder": {
+      "label": "Folder name",
+      "hint": "Used for every host, or when the object has no value for the folder you picked."
+    },
+    "portCustomField": {
+      "label": "Port custom field",
+      "hint": "A NetBox custom field with the SSH port. Optional."
+    },
+    "usernameCustomField": {
+      "label": "Username custom field",
+      "hint": "A NetBox custom field with the SSH username. Optional."
+    },
+    "copyNetboxTags": {
+      "label": "Copy NetBox tags",
+      "description": "Give each host the tags it has in NetBox. Tags you add in Termix are kept."
+    },
+    "syncTag": {
+      "label": "Extra tag",
+      "hint": "Added to every synced host. Leave empty for none."
+    },
+    "syncNotes": {
+      "label": "Write notes",
+      "description": "Put the NetBox link and description in the host's notes."
+    },
+    "adoptExisting": {
+      "label": "Link existing hosts",
+      "description": "When a host with the same address already exists, update it instead of adding another."
+    },
+    "missingAction": {
+      "label": "When an object leaves NetBox or the filter",
+      "keep": "Keep the host",
+      "tag": "Tag it netbox-missing",
+      "delete": "Delete the host"
+    },
+    "autoSync": {
+      "label": "Sync automatically",
+      "description": "Run a sync on a schedule in the background."
+    },
+    "intervalMinutes": {
+      "label": "Every (minutes)"
+    }
+  },
+  "actions": {
+    "save": "Save",
+    "test": "Test connection",
+    "preview": "Preview",
+    "sync": "Sync now",
+    "forget": "Disconnect"
+  },
+  "confirm": {
+    "forget": {
+      "title": "Disconnect NetBox?",
+      "description": "Your settings and token are removed. Synced hosts stay, but are no longer updated.",
+      "confirm": "Disconnect"
+    },
+    "deleteHosts": {
+      "title": "Delete hosts?",
+      "description_one": "This sync deletes {{count}} host that is no longer in NetBox.",
+      "description_other": "This sync deletes {{count}} hosts that are no longer in NetBox.",
+      "confirm": "Sync and delete"
+    }
+  },
+  "toast": {
+    "saved": "Settings saved.",
+    "forgotten": "NetBox disconnected.",
+    "testOk": "Connected to NetBox {{version}}.",
+    "synced": "Sync done: {{created}} added, {{updated}} updated."
+  },
+  "result": {
+    "never": "No sync has run yet.",
+    "at": "Last sync {{at}}",
+    "preview": "Preview, nothing was changed",
+    "found": "Found in NetBox",
+    "created": "Added",
+    "updated": "Updated",
+    "adopted": "Linked",
+    "unchanged": "Unchanged",
+    "skipped": "Skipped",
+    "missing": "Missing",
+    "deleted": "Deleted",
+    "errors": "Errors",
+    "empty": "Nothing to change.",
+    "kind": {
+      "device": "Device",
+      "vm": "VM"
+    },
+    "action": {
+      "create": "Add",
+      "update": "Update",
+      "adopt": "Link",
+      "unchanged": "Unchanged",
+      "skip": "Skip",
+      "missing": "Missing",
+      "delete": "Delete"
+    },
+    "reason": {
+      "noAddress": "No primary IP in NetBox"
+    },
+    "changes": "Changes: {{fields}}"
+  },
+  "errors": {
+    "invalidUrl": "Enter an http or https address without a username or password.",
+    "noObjectTypes": "Pick devices, virtual machines or both.",
+    "invalidPort": "Enter a port from 1 to 65535.",
+    "credentialRequired": "Pick an SSH key.",
+    "folderRequired": "Enter a folder name.",
+    "invalidInterval": "Enter 5 to 10080 minutes.",
+    "invalidCertificate": "Paste a PEM certificate.",
+    "invalidToken": "The token can't have spaces.",
+    "tokenRequired": "Enter an API token.",
+    "noToken": "Save an API token first.",
+    "notConfigured": "Save the settings first.",
+    "alreadyRunning": "A sync is already running.",
+    "unauthorized": "NetBox refused the token. Check that it is valid and can read devices and virtual machines.",
+    "notFound": "NetBox did not answer at this address. Check the URL.",
+    "unreachable": "Could not reach NetBox.",
+    "badResponse": "NetBox sent an answer this plugin does not understand.",
+    "httpError": "NetBox answered with an error.",
+    "unknown": "Something went wrong."
+  },
+  "permissions": {
+    "use": {
+      "title": "Use NetBox Sync",
+      "description": "Connect NetBox and sync its devices and virtual machines into your own hosts."
+    }
+  }
+}

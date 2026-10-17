@@ -1,0 +1,59 @@
+{
+  "id": "netbox-sync",
+  "name": "NetBox Sync",
+  "version": "1.0.0",
+  "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags.",
+  "author": {
+    "name": "tabisch",
+    "url": "https://github.com/tabisch"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/tabisch/termix-netbox-import",
+  "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
+  "category": "Infrastructure",
+  "icon": "Network",
+  "features": [
+    "Import NetBox devices and virtual machines as hosts",
+    "Pick what to sync by NetBox tags, match any or all of them",
+    "Exclude tags and filter by status",
+    "Preview changes before a sync",
+    "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
+    "Folders from site, role, tenant, platform or cluster"
+  ],
+  "env": [],
+  "engine": {
+    "termix": ">=26.10.0",
+    "api": "^1.2"
+  },
+  "capabilities": [
+    "db:own",
+    "secrets:own",
+    "hosts:read",
+    "hosts:write",
+    "credentials:use",
+    "network:outbound",
+    "network:serve",
+    "ui:surface",
+    "users:impersonate"
+  ],
+  "contributes": {
+    "tabs": [
+      {
+        "id": "netbox-sync",
+        "titleKey": "tab.title",
+        "icon": "Network",
+        "openFrom": ["rail", "palette"]
+      }
+    ],
+    "permissions": [
+      {
+        "name": "use",
+        "titleKey": "permissions.use.title",
+        "descriptionKey": "permissions.use.description",
+        "defaultRoles": ["admin"]
+      }
+    ]
+  },
+  "locales": "locales",
+  "platforms": ["linux", "win32", "darwin"]
+}
