@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+### Fixed
+
+- The message after Sync now also shows how many hosts were removed and how many are missing from NetBox
+
 ## 1.2.0
 
 ### Added

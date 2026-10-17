@@ -1,7 +1,7 @@
 {
   "id": "netbox-sync",
   "name": "NetBox Sync",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
   "author": {
     "name": "tabisch",
