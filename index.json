@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-17T21:22:04.213Z",
+  "updatedAt": "2026-10-17T21:31:57.877Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -20,10 +20,33 @@
         "Exclude tags and filter by status",
         "Preview changes before a sync",
         "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
+        "Remove old entries automatically after a grace period",
         "Folders from site, role, tenant, platform or cluster"
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.2.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.2.0/netbox-sync-1.2.0.tmxplug",
+          "sha256": "bd26b71b5dd1c7470ad0182c8fb83abfb0674751bc598658dc9e356994d6ca99",
+          "signature": "uVur21kHNwCha3/Qxq6xI/yJRYT9Fvv79c/xPJi6z/9QMcdSSEXKCvlEaudN0nBocmW2jAGSIwiIlM2WEmxzCA==",
+          "size": 55021,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.2.0",
+          "notes": "### Added\n\n- Remove old entries automatically: a host that has been gone from NetBox, or out of the filter, for a set number of days is deleted by the next sync. Until then it is kept or tagged `netbox-missing`\n",
+          "publishedAt": "2026-10-17T21:31:41.000Z"
+        },
         {
           "version": "1.1.0",
           "api": "1",
