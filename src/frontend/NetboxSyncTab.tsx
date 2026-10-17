@@ -475,6 +475,12 @@ export function createNetboxSyncTab(app: TermixApp) {
                 checked={config.virtualMachines}
                 onChange={(value) => update("virtualMachines", value)}
               />
+              <SwitchRow
+                label={t("fields.ipAddresses.label")}
+                description={t("fields.ipAddresses.description")}
+                checked={config.ipAddresses}
+                onChange={(value) => update("ipAddresses", value)}
+              />
               {errorText("devices") && (
                 <p className="text-xs text-destructive">
                   {errorText("devices")}

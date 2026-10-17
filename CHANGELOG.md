@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.0.1
+## 1.1.0
+
+### Added
+
+- Sync IPAM IP addresses as hosts, filtered by the same tags and statuses. A host is named after the address's DNS name, then the device or VM it is assigned to, then the address. Addresses that are already a synced device's or VM's primary IP are skipped
 
 ### Fixed
 

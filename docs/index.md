@@ -13,12 +13,14 @@ Each user syncs into hosts they own, with their own settings and token. The toke
 
 In What to sync:
 
-- Turn Devices and Virtual machines on or off.
+- Turn Devices, Virtual machines and IP addresses on or off.
 - Add the tags to sync under Tags, by their NetBox name or slug. With Any tag, an object with at least one of them is synced. With All tags, only objects with every one of them are. Leave Tags empty to sync every object.
 - Objects with a tag under Skip objects with these tags are never synced.
 - Statuses limits the sync to objects with that NetBox status. It is `active` to start with. Leave it empty for every status.
 
-Objects without a primary IP in NetBox are skipped.
+Devices and virtual machines without a primary IP in NetBox are skipped.
+
+IP addresses are IPAM's IP Addresses, each synced as its own host, for addresses you tag directly rather than through a device. A host is named after the address's DNS name, then the device or VM the address is assigned to, then the address itself. An address that is already the primary IP of a device or VM being synced is skipped, so the same machine isn't added twice. The folder can come from the address's tenant or role.
 
 ## New hosts
 

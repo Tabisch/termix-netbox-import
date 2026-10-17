@@ -4,6 +4,7 @@ import type { NetboxObject } from "../../src/backend/netbox.js";
 export interface FakeNetbox {
   devices: NetboxObject[];
   vms: NetboxObject[];
+  ips: NetboxObject[];
   token: string;
   /** Every URL requested, in order. */
   requests: string[];
@@ -21,6 +22,11 @@ const STATUSES = [
   "failed",
   "inventory",
   "decommissioning",
+  // IP address statuses
+  "reserved",
+  "deprecated",
+  "dhcp",
+  "slaac",
 ];
 
 function json(status: number, body: unknown): Response {
@@ -36,11 +42,12 @@ function json(status: number, body: unknown): Response {
  * filters are ANDed and repeated status filters are ORed.
  */
 export function createFakeNetbox(
-  seed: Partial<Pick<FakeNetbox, "devices" | "vms" | "token">> = {},
+  seed: Partial<Pick<FakeNetbox, "devices" | "vms" | "ips" | "token">> = {},
 ): FakeNetbox {
   const fake: FakeNetbox = {
     devices: seed.devices ?? [],
     vms: seed.vms ?? [],
+    ips: seed.ips ?? [],
     token: seed.token ?? "secret-token",
     requests: [],
     inits: [],
@@ -57,7 +64,7 @@ export function createFakeNetbox(
         return json(200, { "netbox-version": "4.2.1" });
       }
       const allTags = new Map<string, { name?: string; slug?: string }>();
-      for (const object of [...fake.devices, ...fake.vms]) {
+      for (const object of [...fake.devices, ...fake.vms, ...fake.ips]) {
         for (const tag of object.tags ?? []) allTags.set(tag.slug!, tag);
       }
       if (parsed.pathname === "/api/extras/tags/") {
@@ -69,7 +76,9 @@ export function createFakeNetbox(
           ? fake.devices
           : parsed.pathname === "/api/virtualization/virtual-machines/"
             ? fake.vms
-            : null;
+            : parsed.pathname === "/api/ipam/ip-addresses/"
+              ? fake.ips
+              : null;
       if (!list) return json(404, { detail: "Not found." });
       const tags = parsed.searchParams.getAll("tag");
       const statuses = parsed.searchParams.getAll("status");
@@ -128,6 +137,28 @@ export function device(
     primary_ip: ip ? { id, address: `${ip}/24` } : null,
     site: { id: 1, name: "Berlin", slug: "berlin" },
     role: { id: 1, name: "Server", slug: "server" },
+    tags: tags.map((slug) => ({ name: slug.toUpperCase(), slug })),
+    custom_fields: {},
+    ...extra,
+  };
+}
+
+/** An IPAM IP address the way NetBox lists it. */
+export function ipAddress(
+  address: string,
+  tags: string[],
+  extra: Partial<NetboxObject> = {},
+): NetboxObject {
+  const id = extra.id ?? nextId++;
+  return {
+    id,
+    address,
+    display: address,
+    url: `${NETBOX_URL}/api/ipam/ip-addresses/${id}/`,
+    status: { value: "active", label: "Active" },
+    dns_name: "",
+    assigned_object: null,
+    tenant: null,
     tags: tags.map((slug) => ({ name: slug.toUpperCase(), slug })),
     custom_fields: {},
     ...extra,

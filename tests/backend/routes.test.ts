@@ -15,6 +15,7 @@ import { activate } from "../../src/backend/index.js";
 import {
   createFakeNetbox,
   device,
+  ipAddress,
   NETBOX_URL,
   type FakeNetbox,
 } from "./fake-netbox.js";
@@ -303,6 +304,40 @@ describe("netbox-sync routes", () => {
     expect(status).toBe(424);
     expect(body).toMatchObject({ code: "unknownTag", detail: "Prod Servers" });
     expect(await owned()).toHaveLength(0);
+  });
+
+  it("syncs tagged IP addresses, skipping ones a device already has", async () => {
+    netbox.ips = [
+      ipAddress("10.0.5.1/24", ["termix"], { id: 1, dns_name: "printer.lan" }),
+      // Same address as web-1's primary IP: web-1 is already synced.
+      ipAddress("10.0.0.1/24", ["termix"], { id: 2 }),
+      ipAddress("10.0.5.2/24", ["other"], { id: 3 }),
+    ];
+    await configure({ ipAddresses: true });
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ created: 4, errors: [] });
+    const printer = (await owned()).find((h) => h.name === "printer.lan")!;
+    expect(printer).toMatchObject({ ip: "10.0.5.1", port: 22 });
+    expect(printer.notes).toContain(
+      "https://netbox.internal/ipam/ip-addresses/1/",
+    );
+
+    // Leaving the filter is handled like any other object.
+    netbox.ips[0]!.tags = [];
+    const again = await request("POST", "/sync");
+    expect(again.body).toMatchObject({ missing: 1 });
+  });
+
+  it("syncs only IP addresses when devices and VMs are off", async () => {
+    netbox.ips = [ipAddress("10.0.5.1/24", ["termix"], { id: 1 })];
+    await configure({
+      devices: false,
+      virtualMachines: false,
+      ipAddresses: true,
+    });
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ found: 1, created: 1 });
+    expect((await owned()).map((h) => h.name)).toEqual(["10.0.5.1"]);
   });
 
   it("matches all tags when asked", async () => {

@@ -12,7 +12,7 @@ import {
   webUrl,
 } from "../../src/backend/mapping.js";
 import { planCreate, planUpdate } from "../../src/backend/sync.js";
-import { device } from "./fake-netbox.js";
+import { device, ipAddress } from "./fake-netbox.js";
 
 const config = normalizeConfig({ netboxUrl: "https://netbox.internal" });
 
@@ -101,6 +101,37 @@ describe("mapping", () => {
       managedTags: ["netbox", "LINUX"],
       notes: "NetBox: https://netbox.internal/dcim/devices/3/\nFront end",
     });
+  });
+
+  it("names an IP address by DNS name, then its device, then itself", () => {
+    const desired = (object: ReturnType<typeof ipAddress>) =>
+      desiredHost({ kind: "ip", object }, config);
+    expect(
+      desired(ipAddress("10.0.2.1/24", [], { dns_name: "router.lan" })),
+    ).toMatchObject({ name: "router.lan", ip: "10.0.2.1" });
+    expect(
+      desired(
+        ipAddress("10.0.2.2/24", [], {
+          assigned_object: { name: "eth0", device: { name: "sw-1" } },
+        }),
+      ),
+    ).toMatchObject({ name: "sw-1", ip: "10.0.2.2" });
+    expect(desired(ipAddress("2001:db8::9/64", []))).toMatchObject({
+      name: "2001:db8::9",
+      ip: "2001:db8::9",
+    });
+  });
+
+  it("uses an IP address's role label as its folder", () => {
+    expect(
+      desiredHost(
+        {
+          kind: "ip",
+          object: ipAddress("10.0.2.3/24", [], { role: { label: "VIP" } }),
+        },
+        { ...config, folderSource: "role" },
+      ),
+    ).toMatchObject({ folder: "VIP" });
   });
 
   it("skips an object without a primary IP", () => {

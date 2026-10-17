@@ -26,6 +26,8 @@ export interface SyncConfig {
   caCert: string;
   devices: boolean;
   virtualMachines: boolean;
+  /** IPAM IP addresses, each one its own host. */
+  ipAddresses: boolean;
   /** NetBox tag slugs an object must carry. Empty syncs everything. */
   tags: string[];
   tagMatch: TagMatch;
@@ -61,6 +63,7 @@ export const DEFAULT_CONFIG: SyncConfig = {
   caCert: "",
   devices: true,
   virtualMachines: true,
+  ipAddresses: false,
   tags: [],
   tagMatch: "any",
   excludeTags: [],
@@ -133,6 +136,7 @@ export function normalizeConfig(input: unknown): SyncConfig {
     caCert: str(raw.caCert, d.caCert, 65536),
     devices: bool(raw.devices, d.devices),
     virtualMachines: bool(raw.virtualMachines, d.virtualMachines),
+    ipAddresses: bool(raw.ipAddresses, d.ipAddresses),
     tags: raw.tags === undefined ? d.tags : cleanList(raw.tags),
     tagMatch: oneOf(raw.tagMatch, TAG_MATCHES, d.tagMatch),
     excludeTags:
@@ -178,7 +182,7 @@ export function validateConfig(config: SyncConfig): ConfigErrors {
   ) {
     errors.netboxUrl = "invalidUrl";
   }
-  if (!config.devices && !config.virtualMachines) {
+  if (!config.devices && !config.virtualMachines && !config.ipAddresses) {
     errors.devices = "noObjectTypes";
   }
   if (config.port < 1 || config.port > 65535) errors.port = "invalidPort";

@@ -1,13 +1,16 @@
 import type { PluginFetch } from "@termix-ssh/plugin-sdk/backend";
 import type { SyncConfig } from "./config.js";
+import { itemAddress } from "./mapping.js";
 
-export type NetboxKind = "device" | "vm";
+export type NetboxKind = "device" | "vm" | "ip";
 
 interface NetboxRef {
   id?: number;
   name?: string;
   slug?: string;
   display?: string;
+  /** Choice fields, like an IP address's role, have a label instead of a name. */
+  label?: string;
 }
 
 interface NetboxIp {
@@ -41,6 +44,15 @@ export interface NetboxObject {
   cluster?: NetboxRef | null;
   tags?: NetboxTag[];
   custom_fields?: Record<string, unknown> | null;
+  /** IP addresses only: the address with its prefix length, like 10.0.0.5/24. */
+  address?: string;
+  dns_name?: string;
+  /** IP addresses only: the interface it is on, with its device or VM. */
+  assigned_object?: {
+    name?: string;
+    device?: NetboxRef | null;
+    virtual_machine?: NetboxRef | null;
+  } | null;
 }
 
 export interface NetboxItem {
@@ -51,6 +63,7 @@ export interface NetboxItem {
 const ENDPOINTS: Record<NetboxKind, string> = {
   device: "/api/dcim/devices/",
   vm: "/api/virtualization/virtual-machines/",
+  ip: "/api/ipam/ip-addresses/",
 };
 
 const PAGE_SIZE = 250;
@@ -334,6 +347,21 @@ export class NetboxClient {
     if (config.virtualMachines) {
       for (const object of await this.listObjects("vm", config)) {
         items.push({ kind: "vm", object });
+      }
+    }
+    if (config.ipAddresses) {
+      // An address that is already a synced device's or VM's primary IP, or
+      // that another IP object (in another VRF) has, would be a second host
+      // for the same machine.
+      const taken = new Set(
+        items.map((item) => itemAddress(item)).filter(Boolean),
+      );
+      for (const object of await this.listObjects("ip", config)) {
+        const item: NetboxItem = { kind: "ip", object };
+        const address = itemAddress(item);
+        if (address && taken.has(address)) continue;
+        if (address) taken.add(address);
+        items.push(item);
       }
     }
     return items;
