@@ -76,6 +76,34 @@ export function mergeTags(
   return unique([...kept, ...nextManaged]);
 }
 
+/** The address a host connects to: an IP object's own, else the primary IP. */
+export function itemAddress(item: NetboxItem): string | null {
+  if (item.kind === "ip") {
+    const address = item.object.address ? stripPrefix(item.object.address) : "";
+    return address || null;
+  }
+  return primaryAddress(item.object);
+}
+
+/**
+ * A host name for the object. An IP address has no name of its own, so it
+ * takes its DNS name, then the device or VM it is assigned to, then itself.
+ */
+export function itemName(item: NetboxItem): string {
+  const { object } = item;
+  if (item.kind === "ip") {
+    const assigned = object.assigned_object;
+    return (
+      object.dns_name ||
+      assigned?.device?.name ||
+      assigned?.virtual_machine?.name ||
+      itemAddress(item) ||
+      `ip-${object.id}`
+    );
+  }
+  return object.name || object.display || `${item.kind}-${object.id}`;
+}
+
 function folderFor(object: NetboxObject, config: SyncConfig): string {
   const ref =
     config.folderSource === "site"
@@ -89,7 +117,7 @@ function folderFor(object: NetboxObject, config: SyncConfig): string {
             : config.folderSource === "cluster"
               ? object.cluster
               : null;
-  const name = ref?.name || ref?.display;
+  const name = ref?.name || ref?.label || ref?.display;
   return (name || config.folder || "").slice(0, 255);
 }
 
@@ -126,7 +154,7 @@ export function desiredHost(
   config: SyncConfig,
 ): DesiredHost | { skip: "noAddress" } {
   const { object } = item;
-  const ip = primaryAddress(object);
+  const ip = itemAddress(item);
   if (!ip) return { skip: "noAddress" };
 
   const managedTags: string[] = [];
@@ -140,10 +168,7 @@ export function desiredHost(
 
   const username = customField(object, config.usernameCustomField);
   return {
-    name: (object.name || object.display || `${item.kind}-${object.id}`).slice(
-      0,
-      255,
-    ),
+    name: itemName(item).slice(0, 255),
     ip,
     port: portFrom(customField(object, config.portCustomField)),
     username:

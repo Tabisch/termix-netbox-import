@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   authorizationHeader,
+  errorDetail,
   NetboxClient,
   NetboxError,
 } from "../../src/backend/netbox.js";
@@ -113,5 +114,43 @@ describe("NetboxClient", () => {
       statuses: ["active"],
     });
     expect(found.map((o) => o.name)).toEqual(["a"]);
+  });
+
+  it("resolves tags given by name or slug, any case", async () => {
+    const fake = createFakeNetbox({
+      devices: [device("a", "10.0.0.1", ["prod-servers"])],
+    });
+    expect(
+      await client(fake).resolveTags(["PROD-SERVERS", "prod-servers"]),
+    ).toEqual(["prod-servers"]);
+  });
+
+  it("names the tags NetBox doesn't have", async () => {
+    const fake = createFakeNetbox({
+      devices: [device("a", "10.0.0.1", ["web"])],
+    });
+    await expect(
+      client(fake).resolveTags(["web", "nope", "gone"]),
+    ).rejects.toMatchObject({ code: "unknownTag", detail: "nope, gone" });
+  });
+
+  it("passes on what NetBox says about a bad request", async () => {
+    const fake = createFakeNetbox({
+      devices: [device("a", "10.0.0.1", ["web"])],
+    });
+    await expect(
+      client(fake).listObjects("device", { ...filters, statuses: ["live"] }),
+    ).rejects.toMatchObject({
+      code: "httpError",
+      status: 400,
+      detail:
+        "status: Select a valid choice. live is not one of the available choices.",
+    });
+  });
+
+  it("reads NetBox error bodies", () => {
+    expect(errorDetail('{"detail":"Server error"}')).toBe("Server error");
+    expect(errorDetail('{"tag":["a","b"]}')).toBe("tag: a; tag: b");
+    expect(errorDetail("<h1>Bad Gateway</h1>")).toBe("Bad Gateway");
   });
 });

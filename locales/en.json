@@ -1,7 +1,7 @@
 {
   "plugin": {
     "name": "NetBox Sync",
-    "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags."
+    "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags."
   },
   "tab": {
     "title": "NetBox Sync",
@@ -41,9 +41,13 @@
       "label": "Virtual machines",
       "description": "Sync virtual machines from Virtualization."
     },
+    "ipAddresses": {
+      "label": "IP addresses",
+      "description": "Sync IP addresses from IPAM, each as its own host. Addresses that are already a synced device's or VM's primary IP are skipped."
+    },
     "tags": {
       "label": "Tags",
-      "hint": "NetBox tag slugs. Leave empty to sync every object.",
+      "hint": "NetBox tag names or slugs. Leave empty to sync every object.",
       "placeholder": "Add a tag and press Enter"
     },
     "tagMatch": {
@@ -169,7 +173,8 @@
     "empty": "Nothing to change.",
     "kind": {
       "device": "Device",
-      "vm": "VM"
+      "vm": "VM",
+      "ip": "IP"
     },
     "action": {
       "create": "Add",
@@ -181,13 +186,13 @@
       "delete": "Delete"
     },
     "reason": {
-      "noAddress": "No primary IP in NetBox"
+      "noAddress": "No IP address in NetBox"
     },
     "changes": "Changes: {{fields}}"
   },
   "errors": {
     "invalidUrl": "Enter an http or https address without a username or password.",
-    "noObjectTypes": "Pick devices, virtual machines or both.",
+    "noObjectTypes": "Pick at least one of devices, virtual machines or IP addresses.",
     "invalidPort": "Enter a port from 1 to 65535.",
     "credentialRequired": "Pick an SSH key.",
     "folderRequired": "Enter a folder name.",
@@ -202,7 +207,8 @@
     "notFound": "NetBox did not answer at this address. Check the URL.",
     "unreachable": "Could not reach NetBox.",
     "badResponse": "NetBox sent an answer this plugin does not understand.",
-    "httpError": "NetBox answered with an error.",
+    "httpError": "NetBox answered with an error: {{detail}}",
+    "unknownTag": "NetBox has no tag {{detail}}. Use the tag's name or slug as NetBox shows it.",
     "unknown": "Something went wrong."
   },
   "permissions": {

@@ -16,7 +16,7 @@ A [Termix](https://github.com/Termix-SSH/Termix) plugin that imports devices and
 
 ## Features
 
-- Sync NetBox devices and virtual machines into Termix hosts
+- Sync NetBox devices, virtual machines and IPAM IP addresses into Termix hosts
 - Filter by tags, matching any or all of them, skip objects with excluded tags, and filter by status
 - Preview what a sync would change before running it
 - Sync by hand or on a schedule

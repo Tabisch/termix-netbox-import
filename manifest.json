@@ -1,8 +1,8 @@
 {
   "id": "netbox-sync",
   "name": "NetBox Sync",
-  "version": "1.0.0",
-  "description": "Keep Termix hosts in sync with the devices and virtual machines in NetBox, filtered by tags.",
+  "version": "1.1.0",
+  "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
   "author": {
     "name": "tabisch",
     "url": "https://github.com/tabisch"
@@ -13,7 +13,7 @@
   "category": "Infrastructure",
   "icon": "Network",
   "features": [
-    "Import NetBox devices and virtual machines as hosts",
+    "Import NetBox devices, virtual machines and IP addresses as hosts",
     "Pick what to sync by NetBox tags, match any or all of them",
     "Exclude tags and filter by status",
     "Preview changes before a sync",

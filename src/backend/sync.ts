@@ -7,12 +7,13 @@ import type {
 import { MISSING_TAG, type SyncConfig } from "./config.js";
 import {
   desiredHost,
+  itemName,
   linkKey,
   mergeTags,
   splitTags,
   type DesiredHost,
 } from "./mapping.js";
-import { NetboxClient, NetboxError, type NetboxItem } from "./netbox.js";
+import { NetboxClient, NetboxError } from "./netbox.js";
 import type { LinkRow, Store } from "./store.js";
 
 export const TOKEN_SECRET = "token";
@@ -165,12 +166,6 @@ export function createClient(
     token,
     caCert: config.caCert || undefined,
   });
-}
-
-function itemName(item: NetboxItem): string {
-  return (
-    item.object.name || item.object.display || `${item.kind}-${item.object.id}`
-  );
 }
 
 function errorText(error: unknown): string {
