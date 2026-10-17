@@ -123,6 +123,14 @@
       "tag": "Tag it netbox-missing",
       "delete": "Delete the host"
     },
+    "autoRemove": {
+      "label": "Remove old entries automatically",
+      "description": "Delete a host once it has been gone from NetBox, or out of the filter, for a while. Until then it is kept or tagged as set above."
+    },
+    "removeAfterDays": {
+      "label": "Remove after (days)",
+      "hint": "Counted from the first sync that found it missing. 0 removes it on that sync."
+    },
     "autoSync": {
       "label": "Sync automatically",
       "description": "Run a sync on a schedule in the background."
@@ -209,7 +217,8 @@
     "badResponse": "NetBox sent an answer this plugin does not understand.",
     "httpError": "NetBox answered with an error: {{detail}}",
     "unknownTag": "NetBox has no tag {{detail}}. Use the tag's name or slug as NetBox shows it.",
-    "unknown": "Something went wrong."
+    "unknown": "Something went wrong.",
+    "invalidRemoveAfter": "Enter 0 to 365 days."
   },
   "permissions": {
     "use": {

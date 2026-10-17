@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+
+- Remove old entries automatically: a host that has been gone from NetBox, or out of the filter, for a set number of days is deleted by the next sync. Until then it is kept or tagged `netbox-missing`
+
 ## 1.1.0
 
 ### Added

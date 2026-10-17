@@ -150,6 +150,25 @@ export function planCreate(
   };
 }
 
+/**
+ * Whether a host that is missing from NetBox is deleted on this sync:
+ * always with "delete", and with auto remove once it has been missing for
+ * removeAfterDays (counted from the sync that first found it missing).
+ */
+export function shouldRemove(
+  config: Pick<SyncConfig, "missingAction" | "autoRemove" | "removeAfterDays">,
+  missingSince: string | null,
+  now: string,
+): boolean {
+  if (config.missingAction === "delete") return true;
+  if (!config.autoRemove) return false;
+  if (config.removeAfterDays <= 0) return true;
+  if (!missingSince) return false;
+  const since = Date.parse(missingSince);
+  if (Number.isNaN(since)) return false;
+  return Date.parse(now) - since >= config.removeAfterDays * 86_400_000;
+}
+
 export interface SyncDeps {
   ctx: PluginContext;
   store: Store;
@@ -355,7 +374,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           hostId: host.id,
         };
         try {
-          if (config.missingAction === "delete") {
+          if (shouldRemove(config, link.missingSince, startedAt)) {
             if (!dryRun) {
               const deleted = await ctx.hosts.delete(host.id);
               if (!deleted)

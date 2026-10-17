@@ -39,7 +39,9 @@ Every sync updates the name, address, folder, notes and tags of the hosts it mad
 - Write notes puts the NetBox link and description in the host's notes.
 - Link existing hosts updates a host you already have with the same address instead of adding a second one.
 
-When an object leaves NetBox or no longer matches the filter, the host is kept, tagged `netbox-missing`, or deleted, as set under When an object leaves NetBox or the filter. A tagged host loses the tag when the object comes back. Before a sync that deletes hosts, Termix asks you to confirm.
+When an object leaves NetBox or no longer matches the filter, the host is kept, tagged `netbox-missing`, or deleted, as set under When an object leaves NetBox or the filter. A tagged host loses the tag when the object comes back.
+
+Turn on Remove old entries automatically to clean up after a grace period. A host is then kept or tagged as above at first, and deleted by the first sync, scheduled or by hand, once it has been missing for Remove after (days). The days count from the first sync that found it missing, and start over if the object comes back. With 0 it is deleted on that first sync. Before a sync that deletes hosts, Termix asks you to confirm.
 
 If you delete a synced host in Termix, the next sync adds it again while it is still in NetBox. Remove its tag in NetBox, or add a tag under Skip objects with these tags, to stop that.
 

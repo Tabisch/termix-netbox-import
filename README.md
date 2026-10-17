@@ -21,7 +21,7 @@ A [Termix](https://github.com/Termix-SSH/Termix) plugin that imports devices and
 - Preview what a sync would change before running it
 - Sync by hand or on a schedule
 - Updates name, address, folder, notes and tags, and keeps tags you add in Termix
-- Hosts that leave NetBox are kept, tagged `netbox-missing` or deleted
+- Hosts that leave NetBox are kept, tagged `netbox-missing` or deleted, right away or after a grace period
 - Folders from the site, role, tenant, platform or cluster
 - SSH port and username from NetBox custom fields
 - Links hosts you already have instead of adding them twice

@@ -62,6 +62,9 @@ aren't obvious from the code, and anything that has bitten you before.
 - NetBox failures answer 424 with a `code`, never a 5xx, so a down NetBox can't use up the error budget.
 - Auto sync: `ctx.schedule.every(60s)` looks for due users and runs them one by one with `ctx.asUser`
   (`users:impersonate`). A failed sync still records `lastSyncAt`, so it retries after the interval.
+- Auto remove: `shouldRemove` in sync.ts deletes a missing host once `links.missingSince` is
+  `removeAfterDays` old (0 = at once; `missingAction: "delete"` always). `missingSince` is set by the
+  first sync that misses the object and cleared when it comes back.
 - Only name, ip, folder, notes and tags are updated on existing hosts (plus port/username when a custom
   field names them). Auth is set once on create so users can change it.
 - Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
