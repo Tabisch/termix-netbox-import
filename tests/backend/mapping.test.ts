@@ -104,6 +104,7 @@ describe("mapping", () => {
       folder: "Berlin",
       managedTags: ["netbox", "LINUX"],
       notes: "NetBox: https://netbox.internal/dcim/devices/3/\nFront end",
+      auth: null,
     });
   });
 
@@ -190,6 +191,7 @@ describe("planning", () => {
     folder: "Berlin",
     managedTags: ["netbox"],
     notes: null,
+    auth: null,
   };
 
   it("creates with the config's connection defaults", () => {

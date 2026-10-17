@@ -80,6 +80,14 @@
       "placeholder": "Pick a key",
       "empty": "You have no saved SSH keys."
     },
+    "authFromTags": {
+      "label": "Login from NetBox tags",
+      "description": "Hosts tagged {{prefix}}:sshkey use the SSH key above, {{prefix}}:sshkey:<key name> a saved key by name, {{prefix}}:userpass a username and password, and {{prefix}}:none ask when connecting. Hosts without such a tag use the authentication above. The tags are kept in sync and aren't copied to the host."
+    },
+    "authTagPrefix": {
+      "label": "Login tag prefix",
+      "hint": "Tags named {{prefix}}:<method>, or with the slug {{prefix}}-<method>. Letters, digits and _ only."
+    },
     "folderSource": {
       "label": "Folder",
       "fixed": "One folder",
@@ -218,7 +226,8 @@
     "httpError": "NetBox answered with an error: {{detail}}",
     "unknownTag": "NetBox has no tag {{detail}}. Use the tag's name or slug as NetBox shows it.",
     "unknown": "Something went wrong.",
-    "invalidRemoveAfter": "Enter 0 to 365 days."
+    "invalidRemoveAfter": "Enter 0 to 365 days.",
+    "invalidAuthTagPrefix": "Use letters, digits and _ only."
   },
   "permissions": {
     "use": {

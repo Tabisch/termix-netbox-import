@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- Login from NetBox tags: with Login from NetBox tags on, a host tagged `tauth:sshkey` uses the default SSH key, `tauth:sshkey:<key name>` a saved key by name, `tauth:userpass` a username and password, and `tauth:none` asks when connecting. The slug form (`tauth-sshkey`) works too, and the prefix can be changed
+
 ## 1.2.1
 
 ### Fixed

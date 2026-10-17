@@ -1,5 +1,11 @@
 // Pure: how a NetBox object becomes the fields of a Termix host.
 
+import {
+  authFromTags,
+  isAuthTag,
+  type AuthChoice,
+  type KeyIndex,
+} from "./auth-tags.js";
 import type { SyncConfig } from "./config.js";
 import type { NetboxItem, NetboxObject } from "./netbox.js";
 
@@ -13,6 +19,10 @@ export interface DesiredHost {
   /** Tags this plugin owns on the host. */
   managedTags: string[];
   notes: string | null;
+  /** The login its tags ask for, when login from tags is on. */
+  auth: AuthChoice | null;
+  /** Why its login tags couldn't be used; the defaults apply instead. */
+  authError?: string;
 }
 
 export function linkKey(kind: string, netboxId: number): string {
@@ -152,6 +162,7 @@ function notesFor(object: NetboxObject): string {
 export function desiredHost(
   item: NetboxItem,
   config: SyncConfig,
+  keys: KeyIndex = new Map(),
 ): DesiredHost | { skip: "noAddress" } {
   const { object } = item;
   const ip = itemAddress(item);
@@ -161,13 +172,20 @@ export function desiredHost(
   if (config.syncTag) managedTags.push(config.syncTag);
   if (config.copyNetboxTags) {
     for (const tag of object.tags ?? []) {
+      // Login tags steer the sync; they aren't copied to the host.
+      if (config.authFromTags && isAuthTag(tag, config.authTagPrefix)) continue;
       const name = (tag.name || tag.slug || "").replace(/,/g, "").trim();
       if (name) managedTags.push(name);
     }
   }
 
   const username = customField(object, config.usernameCustomField);
+  const { auth, error: authError } = config.authFromTags
+    ? authFromTags(object.tags ?? [], config, keys)
+    : { auth: null };
   return {
+    auth,
+    ...(authError ? { authError } : {}),
     name: itemName(item).slice(0, 255),
     ip,
     port: portFrom(customField(object, config.portCustomField)),

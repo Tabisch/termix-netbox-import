@@ -38,6 +38,12 @@ export interface SyncConfig {
   port: number;
   authType: ImportAuthType;
   credentialId: number | null;
+  /**
+   * Pick each host's login from NetBox tags like tauth:sshkey or
+   * tauth:userpass instead of authType. See auth-tags.ts.
+   */
+  authFromTags: boolean;
+  authTagPrefix: string;
   folderSource: FolderSource;
   folder: string;
   /** Custom fields that override the port and username per object. */
@@ -79,6 +85,8 @@ export const DEFAULT_CONFIG: SyncConfig = {
   port: 22,
   authType: "none",
   credentialId: null,
+  authFromTags: false,
+  authTagPrefix: "tauth",
   folderSource: "site",
   folder: "NetBox",
   portCustomField: "",
@@ -158,6 +166,8 @@ export function normalizeConfig(input: unknown): SyncConfig {
     authType: oneOf(raw.authType, AUTH_TYPES, d.authType),
     credentialId:
       Number.isInteger(credentialId) && credentialId > 0 ? credentialId : null,
+    authFromTags: bool(raw.authFromTags, d.authFromTags),
+    authTagPrefix: str(raw.authTagPrefix, d.authTagPrefix, 40).toLowerCase(),
     folderSource: oneOf(raw.folderSource, FOLDER_SOURCES, d.folderSource),
     folder: str(raw.folder, d.folder),
     portCustomField: str(raw.portCustomField, d.portCustomField),
@@ -201,6 +211,9 @@ export function validateConfig(config: SyncConfig): ConfigErrors {
   if (config.port < 1 || config.port > 65535) errors.port = "invalidPort";
   if (config.authType === "credential" && !config.credentialId) {
     errors.credentialId = "credentialRequired";
+  }
+  if (config.authFromTags && !/^[a-z0-9_]+$/.test(config.authTagPrefix)) {
+    errors.authTagPrefix = "invalidAuthTagPrefix";
   }
   if (config.folderSource === "fixed" && !config.folder) {
     errors.folder = "folderRequired";

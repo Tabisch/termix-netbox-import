@@ -579,6 +579,26 @@ export function createNetboxSyncTab(app: TermixApp) {
                   <div />
                 )}
               </FieldPair>
+              <SwitchRow
+                label={t("fields.authFromTags.label")}
+                description={t("fields.authFromTags.description", {
+                  prefix: config.authTagPrefix || "tauth",
+                })}
+                checked={config.authFromTags}
+                onChange={(value) => update("authFromTags", value)}
+              />
+              {config.authFromTags && (
+                <TextField
+                  label={t("fields.authTagPrefix.label")}
+                  hint={t("fields.authTagPrefix.hint", {
+                    prefix: config.authTagPrefix || "tauth",
+                  })}
+                  value={config.authTagPrefix}
+                  onChange={(value) => update("authTagPrefix", value)}
+                  error={errorText("authTagPrefix")}
+                  mono
+                />
+              )}
               <FieldPair>
                 <SelectField
                   label={t("fields.folderSource.label")}

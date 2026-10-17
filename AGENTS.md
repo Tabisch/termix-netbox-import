@@ -65,8 +65,12 @@ aren't obvious from the code, and anything that has bitten you before.
 - Auto remove: `shouldRemove` in sync.ts deletes a missing host once `links.missingSince` is
   `removeAfterDays` old (0 = at once; `missingAction: "delete"` always). `missingSince` is set by the
   first sync that misses the object and cleared when it comes back.
+- Login from tags (`authFromTags`): auth-tags.ts reads `<prefix>:<method>[:<key name>]` from tag
+  names, or `<prefix>-<method>[-<key-slug>]` from slugs, because NetBox slugs can't hold `:`. Unlike
+  the defaults, a tag's login is applied on every sync (`changes: ["auth"]`). Login tags are not
+  copied to the host. An unusable tag goes to `result.errors` and the host keeps the defaults.
 - Only name, ip, folder, notes and tags are updated on existing hosts (plus port/username when a custom
-  field names them). Auth is set once on create so users can change it.
+  field names them). Auth is set once on create so users can change it, unless a login tag sets it.
 - Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
   `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
   It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and

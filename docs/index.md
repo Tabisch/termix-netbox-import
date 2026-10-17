@@ -28,6 +28,21 @@ New hosts get the username, SSH port and authentication set under New hosts. Pic
 
 Folder puts each host in a folder named after its site, role, tenant, platform or cluster, or in one folder for all of them. Folder name is used when the object has no value for the folder you picked.
 
+### Login from NetBox tags
+
+Turn on Login from NetBox tags to pick each host's login in NetBox. Tag the device, virtual machine or IP address with one of these:
+
+| Tag                       | Login                                                               |
+| ------------------------- | ------------------------------------------------------------------- |
+| `tauth:sshkey`            | The SSH key picked under New hosts                                  |
+| `tauth:sshkey:<key name>` | One of your saved SSH keys, by name, like `tauth:sshkey:Deploy Key` |
+| `tauth:userpass`          | Username and password                                               |
+| `tauth:none`              | Ask when connecting                                                 |
+
+NetBox doesn't allow `:` in a tag's slug, so a tag whose slug is `tauth-sshkey` (or `tauth-sshkey-deploy-key`) works the same. Change the `tauth` part under Login tag prefix.
+
+Hosts without a login tag use the authentication set above. Unlike those defaults, a login tag is kept in sync: change the tag in NetBox and the next sync changes the host's login. Login tags aren't copied to the host's tags. A tag that can't be used, like an unknown method, a key name you don't have, or two tags that disagree, is listed under Errors in the result and the host gets the defaults.
+
 If your NetBox has custom fields with the SSH port or username, enter their names under Port custom field and Username custom field. A value there wins over the defaults and is kept in sync.
 
 ## Keeping hosts in sync

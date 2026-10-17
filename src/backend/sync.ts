@@ -4,6 +4,7 @@ import type {
   PluginHostRecord,
   PluginHostUpdateInput,
 } from "@termix-ssh/plugin-sdk/backend";
+import { indexKeys, type AuthChoice, type KeyIndex } from "./auth-tags.js";
 import { MISSING_TAG, type SyncConfig } from "./config.js";
 import {
   desiredHost,
@@ -89,6 +90,8 @@ export function planUpdate(
   host: PluginHostRecord,
   desired: DesiredHost,
   previousManaged: string[],
+  /** The username for a host that stops using a credential. */
+  fallbackUsername = "root",
 ): { patch: PluginHostUpdateInput; changes: string[] } {
   const patch: PluginHostUpdateInput = {};
   const changes: string[] = [];
@@ -123,6 +126,28 @@ export function planUpdate(
     patch.username = desired.username;
     changes.push("username");
   }
+  // A login tag is NetBox saying how to log in, so it is kept in sync, unlike
+  // the defaults, which are only applied once.
+  const auth = desired.auth;
+  if (
+    auth &&
+    (host.authType !== auth.authType ||
+      (auth.authType === "credential" &&
+        host.credentialId !== auth.credentialId))
+  ) {
+    patch.authType = auth.authType;
+    patch.credentialId = auth.credentialId;
+    patch.overrideCredentialUsername =
+      auth.authType === "credential" && desired.username !== null;
+    if (desired.username === null) {
+      if (auth.authType === "credential" && host.username) {
+        patch.username = "";
+      } else if (auth.authType !== "credential" && !host.username) {
+        patch.username = fallbackUsername;
+      }
+    }
+    changes.push("auth");
+  }
   return { patch, changes };
 }
 
@@ -131,15 +156,19 @@ export function planCreate(
   desired: DesiredHost,
   config: SyncConfig,
 ): PluginHostCreateInput {
-  const credential = config.authType === "credential";
+  const auth: AuthChoice = desired.auth ?? {
+    authType: config.authType === "credential" ? "credential" : "none",
+    credentialId: config.authType === "credential" ? config.credentialId : null,
+  };
+  const credential = auth.authType === "credential";
   return {
     name: desired.name,
     ip: desired.ip,
     port: desired.port ?? config.port,
     // A credential brings its own username unless NetBox names one.
     username: desired.username ?? (credential ? "" : config.username),
-    authType: credential ? "credential" : "none",
-    credentialId: credential ? config.credentialId : null,
+    authType: auth.authType,
+    credentialId: credential ? auth.credentialId : null,
     overrideCredentialUsername: credential && desired.username !== null,
     connectionType: "ssh",
     enableSsh: true,
@@ -201,6 +230,17 @@ function errorText(error: unknown): string {
 export function createSyncer({ ctx, store }: SyncDeps) {
   const running = new Set<string>();
 
+  /** The acting user's SSH keys, for tauth:sshkey:<name>. */
+  async function loadKeys(): Promise<KeyIndex> {
+    try {
+      return indexKeys(await ctx.credentials.listSshKeys());
+    } catch {
+      // Without credentials.view there are no keys to name; a tag that names
+      // one is reported, and tags without a name still work.
+      return new Map();
+    }
+  }
+
   async function sync(
     userId: string,
     options: { dryRun?: boolean } = {},
@@ -234,6 +274,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
       const items = await createClient(ctx, config, token).listItems(config);
       result.found = items.length;
 
+      const keys: KeyIndex = config.authFromTags ? await loadKeys() : new Map();
       const owned = await ctx.hosts.listOwned();
       const ownedById = new Map(owned.map((host) => [host.id, host]));
 
@@ -270,7 +311,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           name: itemName(item),
         };
         try {
-          const desired = desiredHost(item, config);
+          const desired = desiredHost(item, config, keys);
           if ("skip" in desired) {
             result.skipped++;
             entries.push({
@@ -281,6 +322,9 @@ export function createSyncer({ ctx, store }: SyncDeps) {
               reason: desired.skip,
             });
             continue;
+          }
+          if (desired.authError) {
+            result.errors.push(`${base.name}: ${desired.authError}`);
           }
 
           const link = linkByKey.get(key);
@@ -324,6 +368,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
             host,
             desired,
             link?.managedTags ?? [],
+            config.username,
           );
           if (!dryRun) {
             if (changes.length) await ctx.hosts.update(host.id, patch);

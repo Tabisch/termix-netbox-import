@@ -24,6 +24,7 @@ A [Termix](https://github.com/Termix-SSH/Termix) plugin that imports devices and
 - Hosts that leave NetBox are kept, tagged `netbox-missing` or deleted, right away or after a grace period
 - Folders from the site, role, tenant, platform or cluster
 - SSH port and username from NetBox custom fields
+- Login method per host from NetBox tags like `tauth:sshkey` and `tauth:userpass`
 - Links hosts you already have instead of adding them twice
 - Works with NetBox on a private network and with a private CA
 

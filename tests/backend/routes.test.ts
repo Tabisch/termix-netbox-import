@@ -53,6 +53,10 @@ async function start(permissions = ["netbox-sync.use"]) {
     router: () => (router = express.Router()),
     permissions,
     fetch: (url, init) => netbox.fetch(url, init),
+    sshKeyCredentials: [
+      { id: 5, name: "Default key", username: "deploy", publicKey: null },
+      { id: 6, name: "Deploy Key", username: "deploy", publicKey: null },
+    ],
   });
   await activate(mock.ctx);
 
@@ -384,6 +388,100 @@ describe("netbox-sync routes", () => {
     const { body } = await request("POST", "/sync");
     expect(body).toMatchObject({ found: 1, created: 1 });
     expect((await owned()).map((h) => h.name)).toEqual(["10.0.5.1"]);
+  });
+
+  it("picks each host's login from its tauth tags", async () => {
+    const tags = (...names: string[]) =>
+      names.map((name) => ({ name, slug: name.replace(/:/g, "-") }));
+    netbox.devices = [
+      device("key-host", "10.0.0.1", [], {
+        id: 1,
+        tags: tags("termix", "tauth:sshkey"),
+      }),
+      device("named-key", "10.0.0.2", [], {
+        id: 2,
+        tags: tags("termix", "tauth:sshkey:deploy key"),
+      }),
+      device("pass-host", "10.0.0.3", [], {
+        id: 3,
+        tags: tags("termix", "tauth:userpass"),
+      }),
+      device("plain", "10.0.0.4", [], { id: 4, tags: tags("termix") }),
+      device("bad", "10.0.0.5", [], {
+        id: 5,
+        tags: tags("termix", "tauth:telnet"),
+      }),
+    ];
+    netbox.vms = [];
+    await configure({
+      authFromTags: true,
+      authType: "credential",
+      credentialId: 5,
+      username: "admin",
+    });
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ created: 5 });
+    expect(body.errors).toEqual(["bad: unknown login tag tauth:telnet"]);
+
+    const byName = new Map((await owned()).map((h) => [h.name, h]));
+    expect(byName.get("key-host")).toMatchObject({
+      authType: "credential",
+      credentialId: 5,
+      username: "",
+    });
+    expect(byName.get("named-key")).toMatchObject({
+      authType: "credential",
+      credentialId: 6,
+    });
+    expect(byName.get("pass-host")).toMatchObject({
+      authType: "password",
+      credentialId: null,
+      username: "admin",
+    });
+    // No login tag, or one that can't be used: the defaults above.
+    expect(byName.get("plain")).toMatchObject({
+      authType: "credential",
+      credentialId: 5,
+    });
+    expect(byName.get("bad")).toMatchObject({ authType: "credential" });
+    // Login tags are not copied to the host.
+    expect(byName.get("pass-host")!.tags?.split(",")).not.toContain(
+      "tauth:userpass",
+    );
+
+    // Changing the tag in NetBox changes the login on the next sync.
+    netbox.devices[2]!.tags = tags("termix", "tauth:sshkey:Deploy Key");
+    const again = await request("POST", "/sync");
+    expect(again.body.entries).toContainEqual(
+      expect.objectContaining({
+        name: "pass-host",
+        action: "update",
+        changes: ["auth"],
+      }),
+    );
+    expect((await owned()).find((h) => h.name === "pass-host")).toMatchObject({
+      authType: "credential",
+      credentialId: 6,
+      username: "",
+    });
+  });
+
+  it("ignores tauth tags while login from tags is off", async () => {
+    netbox.devices = [
+      device("pass-host", "10.0.0.3", [], {
+        id: 3,
+        tags: [
+          { name: "termix", slug: "termix" },
+          { name: "tauth:userpass", slug: "tauth-userpass" },
+        ],
+      }),
+    ];
+    netbox.vms = [];
+    await configure();
+    await request("POST", "/sync");
+    const [host] = await owned();
+    expect(host).toMatchObject({ authType: "none" });
+    expect(host!.tags?.split(",")).toContain("tauth:userpass");
   });
 
   it("matches all tags when asked", async () => {
