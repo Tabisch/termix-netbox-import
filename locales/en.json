@@ -80,9 +80,10 @@
       "placeholder": "Pick a key",
       "empty": "You have no saved SSH keys."
     },
-    "credentialTagPrefix": {
-      "label": "Credential tag prefix",
-      "hint": "A NetBox tag that starts with this, like dashlane:8A1B..., gives the host the Termix credential with the same tag, on new and existing hosts. The Dashlane plugin tags its credentials this way. Leave empty to turn it off."
+    "credentialTagPrefixes": {
+      "label": "Credential tag prefixes",
+      "hint": "A NetBox tag that starts with one of these gives the host the Termix credential with exactly the same tag, on new and existing hosts. dashlane:<id> picks a login the Dashlane plugin imported. termix:localsshkey picks whichever of your credentials you tagged termix:localsshkey. Remove all to turn it off.",
+      "placeholder": "Add a prefix and press Enter"
     },
     "folderSource": {
       "label": "Folder",
@@ -207,6 +208,7 @@
     "noObjectTypes": "Pick at least one of devices, virtual machines or IP addresses.",
     "invalidPort": "Enter a port from 1 to 65535.",
     "credentialRequired": "Pick an SSH key.",
+    "credentialMissing": "This SSH key doesn't exist any more. Pick another one.",
     "folderRequired": "Enter a folder name.",
     "invalidInterval": "Enter 5 to 10080 minutes.",
     "invalidCertificate": "Paste a PEM certificate.",

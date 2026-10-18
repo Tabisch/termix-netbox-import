@@ -246,13 +246,39 @@ describe("credential tags", () => {
       tags: names.map((name) => ({ name, slug: name.replace(/:/g, "") })),
     });
 
-  it("takes the first NetBox tag that starts with the prefix, any case", () => {
+  const PREFIXES = ["dashlane:", "termix:"];
+
+  it("takes the first NetBox tag that starts with a prefix, any case", () => {
     expect(
-      credentialTagOf(tagged("linux", DASHLANE.toUpperCase()), "dashlane:"),
+      credentialTagOf(tagged("linux", DASHLANE.toUpperCase()), PREFIXES),
     ).toBe(DASHLANE.toUpperCase());
-    expect(credentialTagOf(tagged("linux"), "dashlane:")).toBeNull();
-    expect(credentialTagOf(tagged("dashlane:"), "dashlane:")).toBeNull();
-    expect(credentialTagOf(tagged(DASHLANE), "")).toBeNull();
+    expect(
+      credentialTagOf(tagged("linux", "termix:localsshkey"), PREFIXES),
+    ).toBe("termix:localsshkey");
+    expect(credentialTagOf(tagged("linux"), PREFIXES)).toBeNull();
+    expect(credentialTagOf(tagged("dashlane:"), PREFIXES)).toBeNull();
+    expect(credentialTagOf(tagged(DASHLANE), [])).toBeNull();
+    expect(credentialTagOf(tagged(DASHLANE), [""])).toBeNull();
+  });
+
+  it("reads settings saved with a single prefix", () => {
+    expect(
+      normalizeConfig({ credentialTagPrefix: "dashlane:" })
+        .credentialTagPrefixes,
+    ).toEqual(["dashlane:", "termix:"]);
+    expect(
+      normalizeConfig({ credentialTagPrefix: "vault:" }).credentialTagPrefixes,
+    ).toEqual(["vault:"]);
+    expect(
+      normalizeConfig({ credentialTagPrefix: "" }).credentialTagPrefixes,
+    ).toEqual([]);
+    expect(normalizeConfig({}).credentialTagPrefixes).toEqual([
+      "dashlane:",
+      "termix:",
+    ]);
+    expect(
+      normalizeConfig({ credentialTagPrefixes: [] }).credentialTagPrefixes,
+    ).toEqual([]);
   });
 
   it("maps credential tags to ids, own credentials before shared ones", () => {
@@ -261,10 +287,14 @@ describe("credential tags", () => {
         { id: 9, name: "shared", tags: [DASHLANE], shared: true },
         { id: 5, name: "web", tags: ["dashlane", DASHLANE], shared: false },
         { id: 2, name: "other", tags: ["linux"], shared: false },
+        { id: 3, name: "local", tags: ["Termix:LocalSshKey"], shared: false },
       ],
-      "dashlane:",
+      PREFIXES,
     );
-    expect([...byTag]).toEqual([[DASHLANE.toLowerCase(), 5]]);
+    expect([...byTag]).toEqual([
+      ["termix:localsshkey", 3],
+      [DASHLANE.toLowerCase(), 5],
+    ]);
   });
 
   it("creates with the tagged credential over the default", () => {

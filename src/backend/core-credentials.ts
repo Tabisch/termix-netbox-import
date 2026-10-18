@@ -1,4 +1,5 @@
 import type { PluginContext } from "@termix-ssh/plugin-sdk/backend";
+import { hasCredentialPrefix } from "./mapping.js";
 
 /**
  * Termix's own credentials list, read as one user. ctx.credentials only lists
@@ -68,14 +69,14 @@ export async function listCoreCredentials(
 }
 
 /**
- * Credential ids by tag, lower case, for the tags that start with prefix.
- * The user's own credentials win over shared ones, then the lowest id.
+ * Credential ids by tag, lower case, for the tags that start with one of the
+ * prefixes. The user's own credentials win over shared ones, then the lowest
+ * id.
  */
 export function credentialsByTag(
   credentials: CoreCredential[],
-  prefix: string,
+  prefixes: string[],
 ): Map<string, number> {
-  const wanted = prefix.toLowerCase();
   const sorted = [...credentials].sort(
     (a, b) => Number(a.shared) - Number(b.shared) || a.id - b.id,
   );
@@ -83,7 +84,7 @@ export function credentialsByTag(
   for (const credential of sorted) {
     for (const tag of credential.tags) {
       const key = tag.trim().toLowerCase();
-      if (key.startsWith(wanted) && !byTag.has(key)) {
+      if (hasCredentialPrefix(key, prefixes) && !byTag.has(key)) {
         byTag.set(key, credential.id);
       }
     }
