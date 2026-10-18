@@ -12,6 +12,11 @@ export interface DesiredHost {
   folder: string;
   /** Tags this plugin owns on the host. */
   managedTags: string[];
+  /**
+   * The object's first NetBox tag that names a credential (starts with the
+   * config's credentialTagPrefix), or null.
+   */
+  credentialTag: string | null;
   notes: string | null;
 }
 
@@ -104,6 +109,25 @@ export function itemName(item: NetboxItem): string {
   return object.name || object.display || `${item.kind}-${object.id}`;
 }
 
+/**
+ * The first of the object's NetBox tags, by name, that starts with prefix
+ * (any case). Null when there is none or prefix is empty.
+ */
+export function credentialTagOf(
+  object: NetboxObject,
+  prefix: string,
+): string | null {
+  const wanted = prefix.trim().toLowerCase();
+  if (!wanted) return null;
+  for (const tag of object.tags ?? []) {
+    const name = (tag.name ?? "").trim();
+    if (name.toLowerCase().startsWith(wanted) && name.length > wanted.length) {
+      return name;
+    }
+  }
+  return null;
+}
+
 function folderFor(object: NetboxObject, config: SyncConfig): string {
   const ref =
     config.folderSource === "site"
@@ -177,6 +201,7 @@ export function desiredHost(
         : null,
     folder: folderFor(object, config),
     managedTags: unique(managedTags),
+    credentialTag: credentialTagOf(object, config.credentialTagPrefix),
     notes: config.syncNotes ? notesFor(object) : null,
   };
 }

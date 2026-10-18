@@ -579,6 +579,13 @@ export function createNetboxSyncTab(app: TermixApp) {
                   <div />
                 )}
               </FieldPair>
+              <TextField
+                label={t("fields.credentialTagPrefix.label")}
+                hint={t("fields.credentialTagPrefix.hint")}
+                value={config.credentialTagPrefix}
+                onChange={(value) => update("credentialTagPrefix", value)}
+                mono
+              />
               <FieldPair>
                 <SelectField
                   label={t("fields.folderSource.label")}

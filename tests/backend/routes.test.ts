@@ -28,8 +28,13 @@ let mock: MockPluginContext;
 let netbox: FakeNetbox;
 let server: http.Server;
 let port: number;
+/** What core's GET /credentials answers, standing in for Termix. */
+let coreCredentials: { status: number; body: unknown };
+
+const CORE_URL = "http://127.0.0.1:30001";
 
 async function start(permissions = ["netbox-sync.use"]) {
+  coreCredentials = { status: 200, body: [] };
   db = await createTestDb(pluginDir);
   db.sqlite
     .prepare("INSERT INTO users (id, username) VALUES (?, ?)")
@@ -52,7 +57,12 @@ async function start(permissions = ["netbox-sync.use"]) {
     db: db.database,
     router: () => (router = express.Router()),
     permissions,
-    fetch: (url, init) => netbox.fetch(url, init),
+    fetch: async (url, init) =>
+      url.startsWith(CORE_URL)
+        ? new Response(JSON.stringify(coreCredentials.body), {
+            status: coreCredentials.status,
+          })
+        : netbox.fetch(url, init),
   });
   await activate(mock.ctx);
 
@@ -196,6 +206,89 @@ describe("netbox-sync routes", () => {
     expect(body.lastResult).toMatchObject({ created: 0, unchanged: 3 });
     expect(body.lastResult.entries).toBeUndefined();
     expect(body.lastSyncAt).toEqual(expect.any(String));
+  });
+
+  it("gives hosts the credential their dashlane: tag names", async () => {
+    const WEB = "dashlane:11111111-AAAA-4AAA-8AAA-111111111111";
+    coreCredentials.body = [
+      { id: 40, name: "other", tags: ["dashlane"] },
+      { id: 41, name: "web", tags: ["dashlane", WEB] },
+    ];
+    const credentialTags = (...names: string[]) => [
+      { name: "termix", slug: "termix" },
+      ...names.map((name) => ({ name, slug: name.replace(/:/g, "") })),
+    ];
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: credentialTags(WEB.toUpperCase()),
+    });
+    netbox.devices[1] = device("web-2", "10.0.0.2", [], {
+      id: 2,
+      tags: credentialTags("dashlane:99999999-0000-4000-8000-000000000000"),
+    });
+    await configure();
+    const first = await request("POST", "/sync");
+    expect(first.body).toMatchObject({ created: 3 });
+    expect(first.body.errors).toEqual([
+      'web-2: no Termix credential is tagged "dashlane:99999999-0000-4000-8000-000000000000"',
+    ]);
+    const tokens = mock.auth.userTokens;
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0]).toMatchObject({ userId: "user-1" });
+
+    const hosts = await owned();
+    expect(hosts.find((h) => h.name === "web-1")).toMatchObject({
+      authType: "credential",
+      credentialId: 41,
+      username: "",
+    });
+    // An unknown tag leaves the host on the defaults.
+    expect(hosts.find((h) => h.name === "web-2")).toMatchObject({
+      authType: "none",
+      credentialId: null,
+    });
+
+    // Tagging an existing host in NetBox switches it to the credential.
+    const web2 = hosts.find((h) => h.name === "web-2")!;
+    netbox.devices[1] = device("web-2", "10.0.0.2", [], {
+      id: 2,
+      tags: credentialTags(WEB),
+    });
+    const second = await request("POST", "/sync");
+    expect(second.body).toMatchObject({ updated: 1, errors: [] });
+    expect(second.body.entries).toContainEqual(
+      expect.objectContaining({
+        hostId: web2.id,
+        changes: ["tags", "credential"],
+      }),
+    );
+    expect((await owned()).find((h) => h.id === web2.id)).toMatchObject({
+      authType: "credential",
+      credentialId: 41,
+    });
+  });
+
+  it("does not ask Termix for credentials when no object has a credential tag", async () => {
+    await configure();
+    await request("POST", "/sync");
+    expect(mock.auth.userTokens).toHaveLength(0);
+  });
+
+  it("reports Termix refusing the credential list and keeps syncing", async () => {
+    coreCredentials = { status: 403, body: { error: "Permission denied" } };
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: [
+        { name: "termix", slug: "termix" },
+        { name: "dashlane:abc", slug: "dashlaneabc" },
+      ],
+    });
+    await configure();
+    const { body } = await request("POST", "/sync");
+    expect(body.created).toBe(3);
+    expect(body.errors).toEqual([
+      "Credential tags: Termix refused to list credentials (403: Permission denied). Hosts keep their authentication.",
+    ]);
   });
 
   it("updates changed objects and keeps tags the user added", async () => {

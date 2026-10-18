@@ -28,11 +28,25 @@ New hosts get the username, SSH port and authentication set under New hosts. Pic
 
 Folder puts each host in a folder named after its site, role, tenant, platform or cluster, or in one folder for all of them. Folder name is used when the object has no value for the folder you picked.
 
+### Credentials from NetBox tags
+
+A NetBox tag can pick the credential a host connects with. Tag the device, VM or IP address in NetBox with a tag whose name starts with Credential tag prefix (`dashlane:` to start with), and the host gets the Termix credential that carries a tag with exactly that name. Case doesn't matter. This works for any kind of credential, password ones included.
+
+The [Dashlane plugin](https://github.com/Tabisch/termix-dashlane-secrets) tags every login it imports as `dashlane:<Dashlane id>`, like `dashlane:8A1B2C3D-0000-4000-8000-1234567890AB`, and shows the tag in its tab. That id never changes, so the link holds when the login is edited or imported again. Make a NetBox tag with that name and put it on the devices that use the login.
+
+- The tagged credential wins over the one under New hosts, and is also set on hosts that already exist, every sync. Changing the host's authentication in Termix only lasts until the next sync while the tag is on the object.
+- Removing the tag in NetBox leaves the host's authentication as it is.
+- An object with several such tags uses the first one.
+- A tag that matches no credential is listed in the sync result, and the host keeps its authentication.
+- Your own credentials are picked before ones shared with you. Looking them up needs Termix's View credentials permission.
+
+Leave Credential tag prefix empty to turn this off.
+
 If your NetBox has custom fields with the SSH port or username, enter their names under Port custom field and Username custom field. A value there wins over the defaults and is kept in sync.
 
 ## Keeping hosts in sync
 
-Every sync updates the name, address, folder, notes and tags of the hosts it made. Authentication, and the port and username unless they come from a custom field, are only set when a host is added, so you can change them in Termix.
+Every sync updates the name, address, folder, notes and tags of the hosts it made. Authentication (unless a [credential tag](#credentials-from-netbox-tags) sets it), and the port and username unless they come from a custom field, are only set when a host is added, so you can change them in Termix.
 
 - Copy NetBox tags gives each host its NetBox tags. Tags you add in Termix are kept. A tag removed in NetBox is removed from the host.
 - Extra tag is added to every synced host, `netbox` to start with.

@@ -38,6 +38,11 @@ export interface SyncConfig {
   port: number;
   authType: ImportAuthType;
   credentialId: number | null;
+  /**
+   * A NetBox tag that starts with this, like "dashlane:8A1B...", gives the
+   * host the Termix credential tagged with the same name. Empty turns it off.
+   */
+  credentialTagPrefix: string;
   folderSource: FolderSource;
   folder: string;
   /** Custom fields that override the port and username per object. */
@@ -79,6 +84,7 @@ export const DEFAULT_CONFIG: SyncConfig = {
   port: 22,
   authType: "none",
   credentialId: null,
+  credentialTagPrefix: "dashlane:",
   folderSource: "site",
   folder: "NetBox",
   portCustomField: "",
@@ -158,6 +164,11 @@ export function normalizeConfig(input: unknown): SyncConfig {
     authType: oneOf(raw.authType, AUTH_TYPES, d.authType),
     credentialId:
       Number.isInteger(credentialId) && credentialId > 0 ? credentialId : null,
+    credentialTagPrefix: str(
+      raw.credentialTagPrefix,
+      d.credentialTagPrefix,
+      100,
+    ).replace(/,/g, ""),
     folderSource: oneOf(raw.folderSource, FOLDER_SOURCES, d.folderSource),
     folder: str(raw.folder, d.folder),
     portCustomField: str(raw.portCustomField, d.portCustomField),

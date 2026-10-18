@@ -1,7 +1,7 @@
 {
   "id": "netbox-sync",
   "name": "NetBox Sync",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
   "author": {
     "name": "tabisch",
@@ -19,12 +19,19 @@
     "Preview changes before a sync",
     "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
     "Remove old entries automatically after a grace period",
-    "Folders from site, role, tenant, platform or cluster"
+    "Folders from site, role, tenant, platform or cluster",
+    "Assign credentials to hosts with NetBox tags, like dashlane:<id>"
   ],
-  "env": [],
+  "env": [
+    {
+      "name": "EMBEDDED_BACKEND_PORT",
+      "description": "Termix's own internal API port. The plugin reads your credentials' tags there. Only set when Termix itself is set to a different port.",
+      "default": "30001"
+    }
+  ],
   "engine": {
     "termix": ">=26.10.0",
-    "api": "^1.2"
+    "api": "^1.3"
   },
   "capabilities": [
     "db:own",
