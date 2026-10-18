@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-18T13:45:43.417Z",
+  "updatedAt": "2026-10-18T14:16:06.926Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -26,6 +26,28 @@
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.6.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.6.0/netbox-sync-1.6.0.tmxplug",
+          "sha256": "dc3290a7b66d2faa4debfbc2dc323e98650fcc6442ae89c6317f2c8a33ed2334",
+          "signature": "8GUHNavKfvdA0BVIdMG2yf6pN5qrFegzCcUR3j41e1r3Dzk82QUa10URkCWAgQq9OcNDFXqgHjXuIBejTcfSAQ==",
+          "size": 66615,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.6.0",
+          "notes": "### Changed\n\n- A credential tag that matches none of your credentials, like `termix:localsshkey` for a user who has no such key yet, now gives the host password authentication with an empty username and password instead of an error. A host already on password authentication keeps what was typed in, and adding the credential later switches the host to it. Turn off Password login when no credential matches to get the old behavior: an error in the sync result, and the host keeps its authentication\n",
+          "publishedAt": "2026-10-18T14:15:51.000Z"
+        },
         {
           "version": "1.5.0",
           "api": "1",
