@@ -80,8 +80,7 @@ aren't obvious from the code, and anything that has bitten you before.
   1.5.0 hold a single `credentialTagPrefix`; `normalizeConfig` maps the old default to the new list.
 - `ssh_data.credential_id` is a foreign key: a host written with a deleted credential id fails with
   "FOREIGN KEY constraint failed". The config's `credentialId` can go stale, so `PUT /config` checks it
-  against `listSshKeys` and the sync checks a new host's credential against core's list before creating it:
-  gone, it creates with an empty password login (`passwordWithoutCredential`) or skips with an error.
+  against `listSshKeys` and the sync checks a new host's credential against core's list before creating it.
 - Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
   `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
   It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and

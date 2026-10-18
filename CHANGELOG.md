@@ -1,11 +1,5 @@
 # Changelog
 
-## 1.6.1
-
-### Fixed
-
-- With Password login when no credential matches on, a new host whose SSH key under New hosts was deleted now gets password authentication with an empty username and password, instead of being skipped with "the SSH key picked under New hosts doesn't exist any more"
-
 ## 1.6.0
 
 ### Changed

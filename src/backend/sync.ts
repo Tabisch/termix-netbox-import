@@ -393,23 +393,18 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           }
 
           if (!host) {
-            let input = planCreate(desired, config, tagAuth);
+            const input = planCreate(desired, config, tagAuth);
             if (
               input.authType === "credential" &&
               typeof input.credentialId === "number" &&
               (await credentialGone(input.credentialId))
             ) {
               // Only the key picked under New hosts can be stale: tagged ones
-              // come from the list itself. Like a tag no credential has, it
-              // gives an empty password login when that is turned on.
-              if (config.passwordWithoutCredential) {
-                input = planCreate(desired, config, { authType: "password" });
-              } else {
-                result.errors.push(
-                  `${base.name}: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.`,
-                );
-                continue;
-              }
+              // come from the list itself.
+              result.errors.push(
+                `${base.name}: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.`,
+              );
+              continue;
             }
             let hostId: number | null = null;
             if (!dryRun) {

@@ -87,7 +87,7 @@
     },
     "passwordWithoutCredential": {
       "label": "Password login when no credential matches",
-      "description": "A host whose credential tag matches none of your credentials, or a new host whose SSH key under New hosts was deleted, gets password authentication with an empty username and password, for you to fill in. Off, the sync lists it as an error: the host keeps its authentication, or a new one is skipped."
+      "description": "A host whose credential tag matches none of your credentials gets password authentication with an empty username and password, for you to fill in. Off, the sync lists it as an error and the host keeps its authentication."
     },
     "folderSource": {
       "label": "Folder",

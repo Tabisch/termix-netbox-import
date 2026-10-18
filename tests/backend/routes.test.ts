@@ -309,28 +309,9 @@ describe("netbox-sync routes", () => {
     await configure({ authType: "credential", credentialId: 7 });
   });
 
-  it("gives new hosts an empty password login when the saved SSH key was deleted", async () => {
+  it("skips new hosts whose saved SSH key was deleted, instead of a foreign key error", async () => {
     coreCredentials.body = [{ id: 7, name: "deploy", tags: [] }];
     await configure({ authType: "credential", credentialId: 7 });
-    coreCredentials.body = [];
-    const { body } = await request("POST", "/sync");
-    expect(body).toMatchObject({ created: 3, errors: [] });
-    expect(
-      (await owned()).map((h) => [h.authType, h.credentialId, h.username]),
-    ).toEqual([
-      ["password", null, ""],
-      ["password", null, ""],
-      ["password", null, ""],
-    ]);
-  });
-
-  it("skips new hosts whose saved SSH key was deleted with the password login off", async () => {
-    coreCredentials.body = [{ id: 7, name: "deploy", tags: [] }];
-    await configure({
-      authType: "credential",
-      credentialId: 7,
-      passwordWithoutCredential: false,
-    });
     // The key is deleted after the settings were saved.
     coreCredentials.body = [];
     const { body } = await request("POST", "/sync");
