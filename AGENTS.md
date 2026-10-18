@@ -66,7 +66,13 @@ aren't obvious from the code, and anything that has bitten you before.
   `removeAfterDays` old (0 = at once; `missingAction: "delete"` always). `missingSince` is set by the
   first sync that misses the object and cleared when it comes back.
 - Only name, ip, folder, notes and tags are updated on existing hosts (plus port/username when a custom
-  field names them). Auth is set once on create so users can change it.
+  field names them). Auth is set once on create so users can change it, unless a credential tag sets it.
+- Credential tags: a NetBox tag starting with `credentialTagPrefix` (default `dashlane:`) sets the host's
+  credential to the Termix credential carrying a tag of the same name (case-insensitive), on create and on
+  every update. No tag leaves auth alone. ctx.credentials only lists SSH keys without tags, so
+  `core-credentials.ts` reads core's `GET /credentials` on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
+  (engine api 1.3), once per sync and only when some object has such a tag. Failures go in `errors`, never
+  fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets.
 - Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
   `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
   It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and

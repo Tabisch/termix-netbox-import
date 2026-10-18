@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- Credentials from NetBox tags: a NetBox tag that starts with Credential tag prefix (`dashlane:` by default) gives the host the Termix credential with the same tag, on new and existing hosts. Pairs with the Dashlane plugin, which tags each imported login `dashlane:<Dashlane id>`
+
 ## 1.2.1
 
 ### Fixed

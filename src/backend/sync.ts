@@ -5,6 +5,7 @@ import type {
   PluginHostUpdateInput,
 } from "@termix-ssh/plugin-sdk/backend";
 import { MISSING_TAG, type SyncConfig } from "./config.js";
+import { credentialsByTag, listCoreCredentials } from "./core-credentials.js";
 import {
   desiredHost,
   itemName,
@@ -84,11 +85,16 @@ function sameTags(a: string | null | undefined, b: string[]): boolean {
   );
 }
 
-/** The fields to change on a host that already exists, and their names. */
+/**
+ * The fields to change on a host that already exists, and their names.
+ * credentialId is the credential a NetBox tag names: the host is switched to
+ * it. Without one the host's auth is left as it is.
+ */
 export function planUpdate(
   host: PluginHostRecord,
   desired: DesiredHost,
   previousManaged: string[],
+  credentialId: number | null = null,
 ): { patch: PluginHostUpdateInput; changes: string[] } {
   const patch: PluginHostUpdateInput = {};
   const changes: string[] = [];
@@ -123,15 +129,33 @@ export function planUpdate(
     patch.username = desired.username;
     changes.push("username");
   }
+  if (credentialId !== null) {
+    const override = desired.username !== null;
+    if (
+      host.authType !== "credential" ||
+      host.credentialId !== credentialId ||
+      host.overrideCredentialUsername !== override
+    ) {
+      patch.authType = "credential";
+      patch.credentialId = credentialId;
+      patch.overrideCredentialUsername = override;
+      changes.push("credential");
+    }
+  }
   return { patch, changes };
 }
 
-/** A new host for a NetBox object, with the config's connection defaults. */
+/**
+ * A new host for a NetBox object, with the config's connection defaults. A
+ * credential a NetBox tag names (tagCredentialId) wins over the default one.
+ */
 export function planCreate(
   desired: DesiredHost,
   config: SyncConfig,
+  tagCredentialId: number | null = null,
 ): PluginHostCreateInput {
-  const credential = config.authType === "credential";
+  const credential =
+    tagCredentialId !== null || config.authType === "credential";
   return {
     name: desired.name,
     ip: desired.ip,
@@ -139,7 +163,7 @@ export function planCreate(
     // A credential brings its own username unless NetBox names one.
     username: desired.username ?? (credential ? "" : config.username),
     authType: credential ? "credential" : "none",
-    credentialId: credential ? config.credentialId : null,
+    credentialId: tagCredentialId ?? (credential ? config.credentialId : null),
     overrideCredentialUsername: credential && desired.username !== null,
     connectionType: "ssh",
     enableSsh: true,
@@ -259,6 +283,33 @@ export function createSyncer({ ctx, store }: SyncDeps) {
         }
       }
 
+      // Read once, and only when some object has a credential tag.
+      let tagCredentials: Promise<Map<string, number> | null> | null = null;
+      const credentialFor = async (
+        tag: string,
+        name: string,
+      ): Promise<number | null> => {
+        tagCredentials ??= listCoreCredentials(ctx, userId).then(
+          (list) => credentialsByTag(list, config.credentialTagPrefix),
+          (error) => {
+            result.errors.push(
+              `Credential tags: ${errorText(error)}. Hosts keep their authentication.`,
+            );
+            return null;
+          },
+        );
+        const byTag = await tagCredentials;
+        if (!byTag) return null;
+        const id = byTag.get(tag.toLowerCase());
+        if (id === undefined) {
+          result.errors.push(
+            `${name}: no Termix credential is tagged "${tag}"`,
+          );
+          return null;
+        }
+        return id;
+      };
+
       const seen = new Set<string>();
       for (const item of items) {
         const key = linkKey(item.kind, item.object.id);
@@ -283,6 +334,10 @@ export function createSyncer({ ctx, store }: SyncDeps) {
             continue;
           }
 
+          const credentialId = desired.credentialTag
+            ? await credentialFor(desired.credentialTag, base.name)
+            : null;
+
           const link = linkByKey.get(key);
           let host = link ? ownedById.get(link.hostId) : undefined;
           let adopting = false;
@@ -296,7 +351,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           }
 
           if (!host) {
-            const input = planCreate(desired, config);
+            const input = planCreate(desired, config, credentialId);
             let hostId: number | null = null;
             if (!dryRun) {
               const created = await ctx.hosts.create(input);
@@ -324,6 +379,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
             host,
             desired,
             link?.managedTags ?? [],
+            credentialId,
           );
           if (!dryRun) {
             if (changes.length) await ctx.hosts.update(host.id, patch);

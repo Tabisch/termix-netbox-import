@@ -4,7 +4,9 @@ import {
   normalizeConfig,
   validateConfig,
 } from "../../src/backend/config.js";
+import { credentialsByTag } from "../../src/backend/core-credentials.js";
 import {
+  credentialTagOf,
   desiredHost,
   mergeTags,
   primaryAddress,
@@ -103,6 +105,7 @@ describe("mapping", () => {
       username: null,
       folder: "Berlin",
       managedTags: ["netbox", "LINUX"],
+      credentialTag: null,
       notes: "NetBox: https://netbox.internal/dcim/devices/3/\nFront end",
     });
   });
@@ -189,6 +192,7 @@ describe("planning", () => {
     username: null,
     folder: "Berlin",
     managedTags: ["netbox"],
+    credentialTag: null,
     notes: null,
   };
 
@@ -232,6 +236,98 @@ describe("planning", () => {
       patch: { ip: "10.0.0.5" },
       changes: ["ip"],
     });
+  });
+});
+
+describe("credential tags", () => {
+  const DASHLANE = "dashlane:11111111-AAAA-4AAA-8AAA-111111111111";
+  const tagged = (...names: string[]) =>
+    device("web-1", "10.0.0.5", [], {
+      tags: names.map((name) => ({ name, slug: name.replace(/:/g, "") })),
+    });
+
+  it("takes the first NetBox tag that starts with the prefix, any case", () => {
+    expect(
+      credentialTagOf(tagged("linux", DASHLANE.toUpperCase()), "dashlane:"),
+    ).toBe(DASHLANE.toUpperCase());
+    expect(credentialTagOf(tagged("linux"), "dashlane:")).toBeNull();
+    expect(credentialTagOf(tagged("dashlane:"), "dashlane:")).toBeNull();
+    expect(credentialTagOf(tagged(DASHLANE), "")).toBeNull();
+  });
+
+  it("maps credential tags to ids, own credentials before shared ones", () => {
+    const byTag = credentialsByTag(
+      [
+        { id: 9, name: "shared", tags: [DASHLANE], shared: true },
+        { id: 5, name: "web", tags: ["dashlane", DASHLANE], shared: false },
+        { id: 2, name: "other", tags: ["linux"], shared: false },
+      ],
+      "dashlane:",
+    );
+    expect([...byTag]).toEqual([[DASHLANE.toLowerCase(), 5]]);
+  });
+
+  it("creates with the tagged credential over the default", () => {
+    expect(
+      planCreate(
+        {
+          name: "web-1",
+          ip: "10.0.0.5",
+          port: null,
+          username: null,
+          folder: "",
+          managedTags: [],
+          credentialTag: DASHLANE,
+          notes: null,
+        },
+        config,
+        7,
+      ),
+    ).toMatchObject({
+      username: "",
+      authType: "credential",
+      credentialId: 7,
+      overrideCredentialUsername: false,
+    });
+  });
+
+  it("switches an existing host to the tagged credential", () => {
+    const desired = {
+      name: "web-1",
+      ip: "10.0.0.5",
+      port: null,
+      username: null,
+      folder: "",
+      managedTags: [],
+      credentialTag: DASHLANE,
+      notes: null,
+    };
+    const host = {
+      name: "web-1",
+      ip: "10.0.0.5",
+      folder: "",
+      tags: "",
+      port: 22,
+      username: "root",
+      authType: "password",
+      credentialId: null,
+      overrideCredentialUsername: false,
+    } as never;
+    expect(planUpdate(host, desired, [], 7)).toEqual({
+      patch: {
+        authType: "credential",
+        credentialId: 7,
+        overrideCredentialUsername: false,
+      },
+      changes: ["credential"],
+    });
+    const already = Object.assign({}, host, {
+      authType: "credential",
+      credentialId: 7,
+    });
+    expect(planUpdate(already, desired, [], 7).changes).toEqual([]);
+    // Without a tagged credential the host's auth is left alone.
+    expect(planUpdate(host, desired, [], null).changes).toEqual([]);
   });
 });
 

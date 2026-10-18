@@ -80,6 +80,10 @@
       "placeholder": "Pick a key",
       "empty": "You have no saved SSH keys."
     },
+    "credentialTagPrefix": {
+      "label": "Credential tag prefix",
+      "hint": "A NetBox tag that starts with this, like dashlane:8A1B..., gives the host the Termix credential with the same tag, on new and existing hosts. The Dashlane plugin tags its credentials this way. Leave empty to turn it off."
+    },
     "folderSource": {
       "label": "Folder",
       "fixed": "One folder",
