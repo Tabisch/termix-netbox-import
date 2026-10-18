@@ -256,6 +256,8 @@ describe("credential tags", () => {
       credentialTagOf(tagged("linux", "termix:localsshkey"), PREFIXES),
     ).toBe("termix:localsshkey");
     expect(credentialTagOf(tagged("linux"), PREFIXES)).toBeNull();
+    // A tag that only picks the object for the sync is not a credential tag.
+    expect(credentialTagOf(tagged("ssh"), PREFIXES)).toBeNull();
     expect(credentialTagOf(tagged("dashlane:"), PREFIXES)).toBeNull();
     expect(credentialTagOf(tagged(DASHLANE), [])).toBeNull();
     expect(credentialTagOf(tagged(DASHLANE), [""])).toBeNull();
