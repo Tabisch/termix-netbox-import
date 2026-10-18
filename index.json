@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-18T13:09:16.559Z",
+  "updatedAt": "2026-10-18T13:45:43.417Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -22,10 +22,32 @@
         "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
         "Remove old entries automatically after a grace period",
         "Folders from site, role, tenant, platform or cluster",
-        "Assign credentials to hosts with NetBox tags, like dashlane:<id>"
+        "Assign credentials to hosts with NetBox tags, like dashlane:<id> or termix:localsshkey"
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.5.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.5.0/netbox-sync-1.5.0.tmxplug",
+          "sha256": "1505fe63f188b550d109b13c8b82ad6f88057db086ed04f82736a32aea6695bb",
+          "signature": "6K9HSVV7GuUdQk1PCGLfTxJagiXgAL+9myHZuocezc0BBkRJS0OoG3bPup51q95MP+hmYOU0VMJaCo+CvVkqDA==",
+          "size": 64992,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.5.0",
+          "notes": "### Added\n\n- `termix:` credential tags: a NetBox tag like `termix:localsshkey` gives the host the user's own Termix credential tagged `termix:localsshkey`, so every user connects with their own key from the same NetBox tag. Credential tag prefixes is now a list, `dashlane:` and `termix:` by default. Settings that kept the old default get `termix:` too\n",
+          "publishedAt": "2026-10-18T13:45:28.000Z"
+        },
         {
           "version": "1.4.0",
           "api": "1",
