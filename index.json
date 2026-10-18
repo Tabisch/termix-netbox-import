@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-17T21:44:20.531Z",
+  "updatedAt": "2026-10-18T13:09:16.559Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -21,10 +21,33 @@
         "Preview changes before a sync",
         "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
         "Remove old entries automatically after a grace period",
-        "Folders from site, role, tenant, platform or cluster"
+        "Folders from site, role, tenant, platform or cluster",
+        "Assign credentials to hosts with NetBox tags, like dashlane:<id>"
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.4.0",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.4.0/netbox-sync-1.4.0.tmxplug",
+          "sha256": "48c56ca9f99f1d0724de8e1503782a4cf88fd248546434b2e9d331acb87585a2",
+          "signature": "QTv0aVdQNjroR4cSuVK7hhAGyh7ZsLwsFFk8iIKvz+J7Z7xy+fXiuNdrxEd5za8hwJEkfWamf2MD0qte+rOcDw==",
+          "size": 62974,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.4.0",
+          "notes": "### Added\n\n- Credentials from NetBox tags: a NetBox tag that starts with Credential tag prefix (`dashlane:` by default) gives the host the Termix credential with the same tag, on new and existing hosts. Pairs with the Dashlane plugin, which tags each imported login `dashlane:<Dashlane id>`\n",
+          "publishedAt": "2026-10-18T13:09:04.000Z"
+        },
         {
           "version": "1.2.1",
           "api": "1",
