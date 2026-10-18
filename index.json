@@ -4,7 +4,7 @@
   "name": "NetBox Sync",
   "apiVersion": 1,
   "publicKey": "7MuggDjsqVL4N+1vfWYPooS2Zdlo4C1AxIonvDtJO1I=",
-  "updatedAt": "2026-10-18T14:16:06.926Z",
+  "updatedAt": "2026-10-18T15:17:40.428Z",
   "plugins": [
     {
       "id": "netbox-sync",
@@ -26,6 +26,28 @@
       ],
       "docs": "https://github.com/tabisch/termix-netbox-import/tree/main/docs",
       "versions": [
+        {
+          "version": "1.6.1",
+          "api": "1",
+          "url": "https://github.com/Tabisch/termix-netbox-import/releases/download/v1.6.1/netbox-sync-1.6.1.tmxplug",
+          "sha256": "72f3505fa21a368e8d77735bb4034914ad74f48d71d6c13c27e1c5e7b3372bdb",
+          "signature": "qELpYttfM52vsY20A0ELBqSBRdICfyntd/z+NdB7z1VFD1KoZf1FkUgH98IogtZPsaKKgC+EhjvE7XmIQws9CQ==",
+          "size": 66807,
+          "capabilities": [
+            "db:own",
+            "secrets:own",
+            "hosts:read",
+            "hosts:write",
+            "credentials:use",
+            "network:outbound",
+            "network:serve",
+            "ui:surface",
+            "users:impersonate"
+          ],
+          "releaseNotesUrl": "https://github.com/Tabisch/termix-netbox-import/releases/tag/v1.6.1",
+          "notes": "### Fixed\n\n- With Password login when no credential matches on, a new host whose SSH key under New hosts was deleted now gets password authentication with an empty username and password, instead of being skipped with \"the SSH key picked under New hosts doesn't exist any more\"\n",
+          "publishedAt": "2026-10-18T15:17:24.000Z"
+        },
         {
           "version": "1.6.0",
           "api": "1",
