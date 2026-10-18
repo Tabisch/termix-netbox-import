@@ -148,7 +148,9 @@ export function registerRoutes(
       }
     }
     if (Object.keys(errors).length) {
-      return res.status(400).json({ error: "Invalid settings", errors });
+      return res
+        .status(400)
+        .json({ error: "Invalid settings", code: "invalidSettings", errors });
     }
     if (req.body?.clearToken) await ctx.secrets.delete(TOKEN_SECRET);
     if (typeof token === "string") await ctx.secrets.set(TOKEN_SECRET, token);

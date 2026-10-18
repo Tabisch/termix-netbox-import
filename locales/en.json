@@ -228,6 +228,7 @@
     "httpError": "NetBox answered with an error: {{detail}}",
     "unknownTag": "NetBox has no tag {{detail}}. Use the tag's name or slug as NetBox shows it.",
     "unknown": "Something went wrong.",
+    "invalidSettings": "Not saved. Fix these settings: {{detail}}",
     "invalidRemoveAfter": "Enter 0 to 365 days."
   },
   "permissions": {
