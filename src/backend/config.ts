@@ -44,6 +44,11 @@ export interface SyncConfig {
    * the same name. Empty turns it off.
    */
   credentialTagPrefixes: string[];
+  /**
+   * A credential tag no credential has gives the host password auth with an
+   * empty username and password. Off, it is reported and auth is left alone.
+   */
+  passwordWithoutCredential: boolean;
   folderSource: FolderSource;
   folder: string;
   /** Custom fields that override the port and username per object. */
@@ -86,6 +91,7 @@ export const DEFAULT_CONFIG: SyncConfig = {
   authType: "none",
   credentialId: null,
   credentialTagPrefixes: ["dashlane:", "termix:"],
+  passwordWithoutCredential: true,
   folderSource: "site",
   folder: "NetBox",
   portCustomField: "",
@@ -185,6 +191,10 @@ export function normalizeConfig(input: unknown): SyncConfig {
     credentialId:
       Number.isInteger(credentialId) && credentialId > 0 ? credentialId : null,
     credentialTagPrefixes: credentialTagPrefixes(raw),
+    passwordWithoutCredential: bool(
+      raw.passwordWithoutCredential,
+      d.passwordWithoutCredential,
+    ),
     folderSource: oneOf(raw.folderSource, FOLDER_SOURCES, d.folderSource),
     folder: str(raw.folder, d.folder),
     portCustomField: str(raw.portCustomField, d.portCustomField),

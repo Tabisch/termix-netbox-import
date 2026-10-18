@@ -85,6 +85,10 @@
       "hint": "A NetBox tag that starts with one of these gives the host the Termix credential with exactly the same tag, on new and existing hosts. dashlane:<id> picks a login the Dashlane plugin imported. termix:localsshkey picks whichever of your credentials you tagged termix:localsshkey. Remove all to turn it off.",
       "placeholder": "Add a prefix and press Enter"
     },
+    "passwordWithoutCredential": {
+      "label": "Password login when no credential matches",
+      "description": "A host whose credential tag matches none of your credentials gets password authentication with an empty username and password, for you to fill in. Off, the sync lists it as an error and the host keeps its authentication."
+    },
     "folderSource": {
       "label": "Folder",
       "fixed": "One folder",

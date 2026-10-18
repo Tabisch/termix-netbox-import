@@ -236,10 +236,7 @@ describe("netbox-sync routes", () => {
     });
     await configure();
     const first = await request("POST", "/sync");
-    expect(first.body).toMatchObject({ created: 3 });
-    expect(first.body.errors).toEqual([
-      'web-2: no Termix credential is tagged "dashlane:99999999-0000-4000-8000-000000000000"',
-    ]);
+    expect(first.body).toMatchObject({ created: 3, errors: [] });
     const tokens = mock.auth.userTokens;
     expect(tokens).toHaveLength(1);
     expect(tokens[0]).toMatchObject({ userId: "user-1" });
@@ -250,10 +247,11 @@ describe("netbox-sync routes", () => {
       credentialId: 41,
       username: "",
     });
-    // An unknown tag leaves the host on the defaults.
+    // A tag no credential has gives an empty username and password.
     expect(hosts.find((h) => h.name === "web-2")).toMatchObject({
-      authType: "none",
+      authType: "password",
       credentialId: null,
+      username: "",
     });
 
     // Tagging an existing host in NetBox switches it to the credential.
@@ -267,12 +265,32 @@ describe("netbox-sync routes", () => {
     expect(second.body.entries).toContainEqual(
       expect.objectContaining({
         hostId: web2.id,
-        changes: ["tags", "credential"],
+        changes: ["tags", "auth"],
       }),
     );
     expect((await owned()).find((h) => h.id === web2.id)).toMatchObject({
       authType: "credential",
       credentialId: 41,
+    });
+  });
+
+  it("reports a tag no credential has, and keeps the defaults, with the password login off", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: [
+        { name: "termix", slug: "termix" },
+        { name: "termix:localsshkey", slug: "termixlocalsshkey" },
+      ],
+    });
+    await configure({ passwordWithoutCredential: false });
+    const { body } = await request("POST", "/sync");
+    expect(body.created).toBe(3);
+    expect(body.errors).toEqual([
+      'web-1: no Termix credential is tagged "termix:localsshkey"',
+    ]);
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "none",
+      username: "root",
     });
   });
 
