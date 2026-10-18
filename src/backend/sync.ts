@@ -326,16 +326,21 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           return null;
         }));
       let byTag: Map<string, number> | null = null;
-      const authForTag = async (tag: string): Promise<TagAuth> => {
+      const authForTag = async (
+        tag: string,
+        name: string,
+      ): Promise<TagAuth> => {
         const list = await credentialList();
         if (!list) return null;
         byTag ??= credentialsByTag(list, config.credentialTagPrefixes);
         const id = byTag.get(tag.toLowerCase());
+        if (id !== undefined)
+          return { authType: "credential", credentialId: id };
         // No credential with that tag: a user without (say) their own
         // termix:localsshkey yet gets an empty username and password.
-        return id === undefined
-          ? { authType: "password" }
-          : { authType: "credential", credentialId: id };
+        if (config.passwordWithoutCredential) return { authType: "password" };
+        result.errors.push(`${name}: no Termix credential is tagged "${tag}"`);
+        return null;
       };
       /**
        * Whether a credential id is missing from Termix. A host that points at
@@ -372,7 +377,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           }
 
           const tagAuth = desired.credentialTag
-            ? await authForTag(desired.credentialTag)
+            ? await authForTag(desired.credentialTag, base.name)
             : null;
 
           const link = linkByKey.get(key);

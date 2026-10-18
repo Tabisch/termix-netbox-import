@@ -586,6 +586,12 @@ export function createNetboxSyncTab(app: TermixApp) {
                 tags={config.credentialTagPrefixes}
                 onChange={(value) => update("credentialTagPrefixes", value)}
               />
+              <SwitchRow
+                label={t("fields.passwordWithoutCredential.label")}
+                description={t("fields.passwordWithoutCredential.description")}
+                checked={config.passwordWithoutCredential}
+                onChange={(value) => update("passwordWithoutCredential", value)}
+              />
               <FieldPair>
                 <SelectField
                   label={t("fields.folderSource.label")}

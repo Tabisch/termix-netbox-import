@@ -274,6 +274,26 @@ describe("netbox-sync routes", () => {
     });
   });
 
+  it("reports a tag no credential has, and keeps the defaults, with the password login off", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: [
+        { name: "termix", slug: "termix" },
+        { name: "termix:localsshkey", slug: "termixlocalsshkey" },
+      ],
+    });
+    await configure({ passwordWithoutCredential: false });
+    const { body } = await request("POST", "/sync");
+    expect(body.created).toBe(3);
+    expect(body.errors).toEqual([
+      'web-1: no Termix credential is tagged "termix:localsshkey"',
+    ]);
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "none",
+      username: "root",
+    });
+  });
+
   it("refuses to save an SSH key that doesn't exist", async () => {
     const { status, body } = await request("PUT", "/config", {
       config: {
