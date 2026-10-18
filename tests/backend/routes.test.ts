@@ -30,11 +30,14 @@ let server: http.Server;
 let port: number;
 /** What core's GET /credentials answers, standing in for Termix. */
 let coreCredentials: { status: number; body: unknown };
+/** What ctx.credentials.listSshKeys answers. */
+let sshKeys: Array<{ id: number; name: string }>;
 
 const CORE_URL = "http://127.0.0.1:30001";
 
 async function start(permissions = ["netbox-sync.use"]) {
   coreCredentials = { status: 200, body: [] };
+  sshKeys = [{ id: 7, name: "deploy" }];
   db = await createTestDb(pluginDir);
   db.sqlite
     .prepare("INSERT INTO users (id, username) VALUES (?, ?)")
@@ -57,6 +60,11 @@ async function start(permissions = ["netbox-sync.use"]) {
     db: db.database,
     router: () => (router = express.Router()),
     permissions,
+    sshKeyCredentials: sshKeys.map((key) => ({
+      ...key,
+      username: null,
+      publicKey: null,
+    })),
     fetch: async (url, init) =>
       url.startsWith(CORE_URL)
         ? new Response(JSON.stringify(coreCredentials.body), {
@@ -268,6 +276,41 @@ describe("netbox-sync routes", () => {
     });
   });
 
+  it("refuses to save an SSH key that doesn't exist", async () => {
+    const { status, body } = await request("PUT", "/config", {
+      config: {
+        netboxUrl: NETBOX_URL,
+        authType: "credential",
+        credentialId: 99,
+      },
+      token: netbox.token,
+    });
+    expect(status).toBe(400);
+    expect(body.errors).toEqual({ credentialId: "credentialMissing" });
+
+    await configure({ authType: "credential", credentialId: 7 });
+  });
+
+  it("skips new hosts whose saved SSH key was deleted, instead of a foreign key error", async () => {
+    coreCredentials.body = [{ id: 7, name: "deploy", tags: [] }];
+    await configure({ authType: "credential", credentialId: 7 });
+    // The key is deleted after the settings were saved.
+    coreCredentials.body = [];
+    const { body } = await request("POST", "/sync");
+    expect(body.created).toBe(0);
+    expect(body.errors).toEqual([
+      "web-1: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.",
+      "web-2: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.",
+      "vm-1: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.",
+    ]);
+    expect(await owned()).toHaveLength(0);
+    expect(mock.auth.userTokens).toHaveLength(1);
+
+    coreCredentials.body = [{ id: 7, name: "deploy", tags: [] }];
+    const again = await request("POST", "/sync");
+    expect(again.body).toMatchObject({ created: 3, errors: [] });
+  });
+
   it("does not ask Termix for credentials when no object has a credential tag", async () => {
     await configure();
     await request("POST", "/sync");
@@ -287,7 +330,7 @@ describe("netbox-sync routes", () => {
     const { body } = await request("POST", "/sync");
     expect(body.created).toBe(3);
     expect(body.errors).toEqual([
-      "Credential tags: Termix refused to list credentials (403: Permission denied). Hosts keep their authentication.",
+      "Credentials: Termix refused to list credentials (403: Permission denied). Credential tags are ignored.",
     ]);
   });
 

@@ -207,6 +207,7 @@
     "noObjectTypes": "Pick at least one of devices, virtual machines or IP addresses.",
     "invalidPort": "Enter a port from 1 to 65535.",
     "credentialRequired": "Pick an SSH key.",
+    "credentialMissing": "This SSH key doesn't exist any more. Pick another one.",
     "folderRequired": "Enter a folder name.",
     "invalidInterval": "Enter 5 to 10080 minutes.",
     "invalidCertificate": "Paste a PEM certificate.",

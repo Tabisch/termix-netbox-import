@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1
+
+### Fixed
+
+- A sync no longer fails a new host with "FOREIGN KEY constraint failed" when the SSH key picked under New hosts was deleted. The host is skipped with an error that says to pick another key, and saving the settings refuses a key that is gone
+
 ## 1.4.0
 
 ### Added

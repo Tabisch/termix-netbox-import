@@ -73,6 +73,9 @@ aren't obvious from the code, and anything that has bitten you before.
   `core-credentials.ts` reads core's `GET /credentials` on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
   (engine api 1.3), once per sync and only when some object has such a tag. Failures go in `errors`, never
   fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets.
+- `ssh_data.credential_id` is a foreign key: a host written with a deleted credential id fails with
+  "FOREIGN KEY constraint failed". The config's `credentialId` can go stale, so `PUT /config` checks it
+  against `listSshKeys` and the sync checks a new host's credential against core's list before creating it.
 - Install from GitHub: the repo is its own custom registry. `.github/workflows/registry.yml` runs
   `scripts/build-registry.mjs` after each Release run and pushes `index.json` to the `registry` branch.
   It lists only releases whose `.tmxplug.sig` verifies against the key in `TERMIX_PLUGIN_SIGNING_KEY`, and

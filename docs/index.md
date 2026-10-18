@@ -24,7 +24,7 @@ IP addresses are IPAM's IP Addresses, each synced as its own host, for addresses
 
 ## New hosts
 
-New hosts get the username, SSH port and authentication set under New hosts. Pick Saved SSH key to connect with one of your SSH key credentials, or Ask when connecting.
+New hosts get the username, SSH port and authentication set under New hosts. Pick Saved SSH key to connect with one of your SSH key credentials, or Ask when connecting. If that key is deleted later, new hosts are skipped and the sync result asks you to pick another one.
 
 Folder puts each host in a folder named after its site, role, tenant, platform or cluster, or in one folder for all of them. Folder name is used when the object has no value for the folder you picked.
 

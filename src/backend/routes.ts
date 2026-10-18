@@ -124,7 +124,7 @@ export function registerRoutes(
    *       200:
    *         description: Saved
    *       400:
-   *         description: Invalid settings, with an error code per field
+   *         description: Invalid settings, with an error code per field. credentialMissing when the picked SSH key no longer exists
    */
   router.put("/config", async (req: Request, res: Response) => {
     const config = normalizeConfig(req.body?.config);
@@ -135,6 +135,18 @@ export function registerRoutes(
       token !== null ||
       (!req.body?.clearToken && !!(await ctx.secrets.get(TOKEN_SECRET)));
     if (!hasToken) errors.token = errors.token ?? "tokenRequired";
+    if (
+      !errors.credentialId &&
+      config.authType === "credential" &&
+      config.credentialId !== null
+    ) {
+      // A deleted key would make every new host fail with a foreign key
+      // error. Without credentials.view there is no list to check against.
+      const keys = await ctx.credentials.listSshKeys().catch(() => null);
+      if (keys && !keys.some((key) => key.id === config.credentialId)) {
+        errors.credentialId = "credentialMissing";
+      }
+    }
     if (Object.keys(errors).length) {
       return res.status(400).json({ error: "Invalid settings", errors });
     }

@@ -5,7 +5,11 @@ import type {
   PluginHostUpdateInput,
 } from "@termix-ssh/plugin-sdk/backend";
 import { MISSING_TAG, type SyncConfig } from "./config.js";
-import { credentialsByTag, listCoreCredentials } from "./core-credentials.js";
+import {
+  credentialsByTag,
+  listCoreCredentials,
+  type CoreCredential,
+} from "./core-credentials.js";
 import {
   desiredHost,
   itemName,
@@ -283,23 +287,24 @@ export function createSyncer({ ctx, store }: SyncDeps) {
         }
       }
 
-      // Read once, and only when some object has a credential tag.
-      let tagCredentials: Promise<Map<string, number> | null> | null = null;
+      // Termix's credentials, read once, and only when a credential tag needs
+      // resolving or a new host is about to get a credential.
+      let coreCredentials: Promise<CoreCredential[] | null> | null = null;
+      const credentialList = () =>
+        (coreCredentials ??= listCoreCredentials(ctx, userId).catch((error) => {
+          result.errors.push(
+            `Credentials: ${errorText(error)}. Credential tags are ignored.`,
+          );
+          return null;
+        }));
+      let byTag: Map<string, number> | null = null;
       const credentialFor = async (
         tag: string,
         name: string,
       ): Promise<number | null> => {
-        tagCredentials ??= listCoreCredentials(ctx, userId).then(
-          (list) => credentialsByTag(list, config.credentialTagPrefix),
-          (error) => {
-            result.errors.push(
-              `Credential tags: ${errorText(error)}. Hosts keep their authentication.`,
-            );
-            return null;
-          },
-        );
-        const byTag = await tagCredentials;
-        if (!byTag) return null;
+        const list = await credentialList();
+        if (!list) return null;
+        byTag ??= credentialsByTag(list, config.credentialTagPrefix);
         const id = byTag.get(tag.toLowerCase());
         if (id === undefined) {
           result.errors.push(
@@ -308,6 +313,15 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           return null;
         }
         return id;
+      };
+      /**
+       * Whether a credential id is missing from Termix. A host that points at
+       * one fails with a foreign key error, so it is checked first. Unknown
+       * (false) when the list can't be read.
+       */
+      const credentialGone = async (id: number): Promise<boolean> => {
+        const list = await credentialList();
+        return !!list && !list.some((credential) => credential.id === id);
       };
 
       const seen = new Set<string>();
@@ -352,6 +366,18 @@ export function createSyncer({ ctx, store }: SyncDeps) {
 
           if (!host) {
             const input = planCreate(desired, config, credentialId);
+            if (
+              input.authType === "credential" &&
+              typeof input.credentialId === "number" &&
+              (await credentialGone(input.credentialId))
+            ) {
+              // Only the key picked under New hosts can be stale: tagged ones
+              // come from the list itself.
+              result.errors.push(
+                `${base.name}: the SSH key picked under New hosts doesn't exist any more. Pick another one and sync again.`,
+              );
+              continue;
+            }
             let hostId: number | null = null;
             if (!dryRun) {
               const created = await ctx.hosts.create(input);
