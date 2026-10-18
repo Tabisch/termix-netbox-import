@@ -67,12 +67,14 @@ aren't obvious from the code, and anything that has bitten you before.
   first sync that misses the object and cleared when it comes back.
 - Only name, ip, folder, notes and tags are updated on existing hosts (plus port/username when a custom
   field names them). Auth is set once on create so users can change it, unless a credential tag sets it.
-- Credential tags: a NetBox tag starting with `credentialTagPrefix` (default `dashlane:`) sets the host's
+- Credential tags: a NetBox tag starting with one of `credentialTagPrefixes` (default `dashlane:`,
+  `termix:`; `termix:localsshkey` is the per-user key convention) sets the host's
   credential to the Termix credential carrying a tag of the same name (case-insensitive), on create and on
   every update. No tag leaves auth alone. ctx.credentials only lists SSH keys without tags, so
   `core-credentials.ts` reads core's `GET /credentials` on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
   (engine api 1.3), once per sync and only when some object has such a tag. Failures go in `errors`, never
-  fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets.
+  fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets. Configs saved before
+  1.5.0 hold a single `credentialTagPrefix`; `normalizeConfig` maps the old default to the new list.
 - `ssh_data.credential_id` is a foreign key: a host written with a deleted credential id fails with
   "FOREIGN KEY constraint failed". The config's `credentialId` can go stale, so `PUT /config` checks it
   against `listSshKeys` and the sync checks a new host's credential against core's list before creating it.

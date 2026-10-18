@@ -311,6 +311,32 @@ describe("netbox-sync routes", () => {
     expect(again.body).toMatchObject({ created: 3, errors: [] });
   });
 
+  it("gives hosts the user's own credential tagged termix:localsshkey", async () => {
+    coreCredentials.body = [
+      {
+        id: 50,
+        name: "someone else's",
+        tags: ["termix:localsshkey"],
+        isShared: true,
+      },
+      { id: 51, name: "my key", tags: ["Termix:LocalSshKey"] },
+    ];
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: [
+        { name: "termix", slug: "termix" },
+        { name: "termix:localsshkey", slug: "termixlocalsshkey" },
+      ],
+    });
+    await configure();
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ created: 3, errors: [] });
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "credential",
+      credentialId: 51,
+    });
+  });
+
   it("does not ask Termix for credentials when no object has a credential tag", async () => {
     await configure();
     await request("POST", "/sync");

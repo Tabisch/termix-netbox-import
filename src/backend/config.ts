@@ -39,10 +39,11 @@ export interface SyncConfig {
   authType: ImportAuthType;
   credentialId: number | null;
   /**
-   * A NetBox tag that starts with this, like "dashlane:8A1B...", gives the
-   * host the Termix credential tagged with the same name. Empty turns it off.
+   * A NetBox tag that starts with one of these, like "dashlane:8A1B..." or
+   * "termix:localsshkey", gives the host the Termix credential tagged with
+   * the same name. Empty turns it off.
    */
-  credentialTagPrefix: string;
+  credentialTagPrefixes: string[];
   folderSource: FolderSource;
   folder: string;
   /** Custom fields that override the port and username per object. */
@@ -84,7 +85,7 @@ export const DEFAULT_CONFIG: SyncConfig = {
   port: 22,
   authType: "none",
   credentialId: null,
-  credentialTagPrefix: "dashlane:",
+  credentialTagPrefixes: ["dashlane:", "termix:"],
   folderSource: "site",
   folder: "NetBox",
   portCustomField: "",
@@ -133,6 +134,25 @@ function oneOf<T extends string>(
   return options.includes(value as T) ? (value as T) : fallback;
 }
 
+/** The old default single prefix, before termix: was added. */
+const OLD_CREDENTIAL_TAG_PREFIX = "dashlane:";
+
+function credentialTagPrefixes(raw: Record<string, unknown>): string[] {
+  if (raw.credentialTagPrefixes !== undefined) {
+    return cleanList(raw.credentialTagPrefixes).map((p) => p.slice(0, 100));
+  }
+  // Settings saved before 1.5.0 hold one prefix. Kept as the old default,
+  // it becomes the new default, so termix: works without a visit to the tab.
+  if (typeof raw.credentialTagPrefix === "string") {
+    const old = raw.credentialTagPrefix.trim().slice(0, 100);
+    if (old.toLowerCase() === OLD_CREDENTIAL_TAG_PREFIX) {
+      return [...DEFAULT_CONFIG.credentialTagPrefixes];
+    }
+    return old ? [old] : [];
+  }
+  return [...DEFAULT_CONFIG.credentialTagPrefixes];
+}
+
 /**
  * Reads a stored or submitted config, filling defaults for anything missing
  * or of the wrong type. Never throws: validateConfig reports what is wrong.
@@ -164,11 +184,7 @@ export function normalizeConfig(input: unknown): SyncConfig {
     authType: oneOf(raw.authType, AUTH_TYPES, d.authType),
     credentialId:
       Number.isInteger(credentialId) && credentialId > 0 ? credentialId : null,
-    credentialTagPrefix: str(
-      raw.credentialTagPrefix,
-      d.credentialTagPrefix,
-      100,
-    ).replace(/,/g, ""),
+    credentialTagPrefixes: credentialTagPrefixes(raw),
     folderSource: oneOf(raw.folderSource, FOLDER_SOURCES, d.folderSource),
     folder: str(raw.folder, d.folder),
     portCustomField: str(raw.portCustomField, d.portCustomField),

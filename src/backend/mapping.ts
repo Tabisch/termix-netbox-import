@@ -13,8 +13,8 @@ export interface DesiredHost {
   /** Tags this plugin owns on the host. */
   managedTags: string[];
   /**
-   * The object's first NetBox tag that names a credential (starts with the
-   * config's credentialTagPrefix), or null.
+   * The object's first NetBox tag that names a credential (starts with one
+   * of the config's credentialTagPrefixes), or null.
    */
   credentialTag: string | null;
   notes: string | null;
@@ -109,21 +109,26 @@ export function itemName(item: NetboxItem): string {
   return object.name || object.display || `${item.kind}-${object.id}`;
 }
 
+/** Whether a tag starts with one of the prefixes (any case) and has more. */
+export function hasCredentialPrefix(tag: string, prefixes: string[]): boolean {
+  const name = tag.trim().toLowerCase();
+  return prefixes.some((prefix) => {
+    const wanted = prefix.trim().toLowerCase();
+    return !!wanted && name.startsWith(wanted) && name.length > wanted.length;
+  });
+}
+
 /**
- * The first of the object's NetBox tags, by name, that starts with prefix
- * (any case). Null when there is none or prefix is empty.
+ * The first of the object's NetBox tags, by name, that starts with one of
+ * the prefixes. Null when there is none.
  */
 export function credentialTagOf(
   object: NetboxObject,
-  prefix: string,
+  prefixes: string[],
 ): string | null {
-  const wanted = prefix.trim().toLowerCase();
-  if (!wanted) return null;
   for (const tag of object.tags ?? []) {
     const name = (tag.name ?? "").trim();
-    if (name.toLowerCase().startsWith(wanted) && name.length > wanted.length) {
-      return name;
-    }
+    if (hasCredentialPrefix(name, prefixes)) return name;
   }
   return null;
 }
@@ -201,7 +206,7 @@ export function desiredHost(
         : null,
     folder: folderFor(object, config),
     managedTags: unique(managedTags),
-    credentialTag: credentialTagOf(object, config.credentialTagPrefix),
+    credentialTag: credentialTagOf(object, config.credentialTagPrefixes),
     notes: config.syncNotes ? notesFor(object) : null,
   };
 }

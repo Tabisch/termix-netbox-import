@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+### Added
+
+- `termix:` credential tags: a NetBox tag like `termix:localsshkey` gives the host the user's own Termix credential tagged `termix:localsshkey`, so every user connects with their own key from the same NetBox tag. Credential tag prefixes is now a list, `dashlane:` and `termix:` by default. Settings that kept the old default get `termix:` too
+
 ## 1.4.1
 
 ### Fixed

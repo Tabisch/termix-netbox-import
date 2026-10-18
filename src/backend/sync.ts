@@ -304,7 +304,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
       ): Promise<number | null> => {
         const list = await credentialList();
         if (!list) return null;
-        byTag ??= credentialsByTag(list, config.credentialTagPrefix);
+        byTag ??= credentialsByTag(list, config.credentialTagPrefixes);
         const id = byTag.get(tag.toLowerCase());
         if (id === undefined) {
           result.errors.push(

@@ -30,9 +30,11 @@ Folder puts each host in a folder named after its site, role, tenant, platform o
 
 ### Credentials from NetBox tags
 
-A NetBox tag can pick the credential a host connects with. Tag the device, VM or IP address in NetBox with a tag whose name starts with Credential tag prefix (`dashlane:` to start with), and the host gets the Termix credential that carries a tag with exactly that name. Case doesn't matter. This works for any kind of credential, password ones included.
+A NetBox tag can pick the credential a host connects with. Tag the device, VM or IP address in NetBox with a tag whose name starts with one of the Credential tag prefixes (`dashlane:` and `termix:` to start with), and the host gets the Termix credential that carries a tag with exactly that name. Case doesn't matter. This works for any kind of credential, password ones included.
 
 The [Dashlane plugin](https://github.com/Tabisch/termix-dashlane-secrets) tags every login it imports as `dashlane:<Dashlane id>`, like `dashlane:8A1B2C3D-0000-4000-8000-1234567890AB`, and shows the tag in its tab. That id never changes, so the link holds when the login is edited or imported again. Make a NetBox tag with that name and put it on the devices that use the login.
+
+`termix:` is for credentials you keep in Termix yourself. Tag a credential in Termix, like your SSH key, `termix:localsshkey`, and tag the devices in NetBox `termix:localsshkey` too. Each user's sync picks that user's own credential, so with one Termix per user, or several users on one Termix, everyone connects with their own key from the same NetBox tag. A user without a credential tagged that way gets an error in the sync result and the host keeps its authentication. Any name after `termix:` works, like `termix:backup-key`.
 
 - The tagged credential wins over the one under New hosts, and is also set on hosts that already exist, every sync. Changing the host's authentication in Termix only lasts until the next sync while the tag is on the object.
 - Removing the tag in NetBox leaves the host's authentication as it is.
@@ -40,7 +42,7 @@ The [Dashlane plugin](https://github.com/Tabisch/termix-dashlane-secrets) tags e
 - A tag that matches no credential is listed in the sync result, and the host keeps its authentication.
 - Your own credentials are picked before ones shared with you. Looking them up needs Termix's View credentials permission.
 
-Leave Credential tag prefix empty to turn this off.
+Remove all Credential tag prefixes to turn this off.
 
 If your NetBox has custom fields with the SSH port or username, enter their names under Port custom field and Username custom field. A value there wins over the defaults and is kept in sync.
 
