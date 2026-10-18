@@ -90,15 +90,26 @@ function sameTags(a: string | null | undefined, b: string[]): boolean {
 }
 
 /**
+ * The login a NetBox credential tag asks for: the credential it names, or,
+ * when the user has no credential with that tag, a username and password
+ * left empty for them to fill in. Null without a tag (or when Termix's
+ * credentials couldn't be read): the host's auth is left alone.
+ */
+export type TagAuth =
+  | { authType: "credential"; credentialId: number }
+  | { authType: "password" }
+  | null;
+
+/**
  * The fields to change on a host that already exists, and their names.
- * credentialId is the credential a NetBox tag names: the host is switched to
+ * tagAuth is what a NetBox credential tag asks for: the host is switched to
  * it. Without one the host's auth is left as it is.
  */
 export function planUpdate(
   host: PluginHostRecord,
   desired: DesiredHost,
   previousManaged: string[],
-  credentialId: number | null = null,
+  tagAuth: TagAuth = null,
 ): { patch: PluginHostUpdateInput; changes: string[] } {
   const patch: PluginHostUpdateInput = {};
   const changes: string[] = [];
@@ -133,41 +144,58 @@ export function planUpdate(
     patch.username = desired.username;
     changes.push("username");
   }
-  if (credentialId !== null) {
+  if (tagAuth?.authType === "credential") {
     const override = desired.username !== null;
     if (
       host.authType !== "credential" ||
-      host.credentialId !== credentialId ||
+      host.credentialId !== tagAuth.credentialId ||
       host.overrideCredentialUsername !== override
     ) {
       patch.authType = "credential";
-      patch.credentialId = credentialId;
+      patch.credentialId = tagAuth.credentialId;
       patch.overrideCredentialUsername = override;
-      changes.push("credential");
+      changes.push("auth");
     }
+  } else if (tagAuth?.authType === "password" && host.authType !== "password") {
+    // Once on password auth the host is left alone, so a username and
+    // password the user typed in are kept.
+    patch.authType = "password";
+    patch.credentialId = null;
+    patch.overrideCredentialUsername = false;
+    if (desired.username === null) patch.username = "";
+    changes.push("auth");
   }
   return { patch, changes };
 }
 
 /**
- * A new host for a NetBox object, with the config's connection defaults. A
- * credential a NetBox tag names (tagCredentialId) wins over the default one.
+ * A new host for a NetBox object, with the config's connection defaults.
+ * What a NetBox credential tag asks for (tagAuth) wins over the defaults.
  */
 export function planCreate(
   desired: DesiredHost,
   config: SyncConfig,
-  tagCredentialId: number | null = null,
+  tagAuth: TagAuth = null,
 ): PluginHostCreateInput {
+  const password = tagAuth?.authType === "password";
   const credential =
-    tagCredentialId !== null || config.authType === "credential";
+    tagAuth?.authType === "credential" ||
+    (!password && config.authType === "credential");
   return {
     name: desired.name,
     ip: desired.ip,
     port: desired.port ?? config.port,
-    // A credential brings its own username unless NetBox names one.
-    username: desired.username ?? (credential ? "" : config.username),
-    authType: credential ? "credential" : "none",
-    credentialId: tagCredentialId ?? (credential ? config.credentialId : null),
+    // A credential brings its own username unless NetBox names one, and a
+    // tag without a matching credential leaves the login for the user.
+    username:
+      desired.username ?? (credential || password ? "" : config.username),
+    authType: credential ? "credential" : password ? "password" : "none",
+    credentialId:
+      tagAuth?.authType === "credential"
+        ? tagAuth.credentialId
+        : credential
+          ? config.credentialId
+          : null,
     overrideCredentialUsername: credential && desired.username !== null,
     connectionType: "ssh",
     enableSsh: true,
@@ -298,21 +326,16 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           return null;
         }));
       let byTag: Map<string, number> | null = null;
-      const credentialFor = async (
-        tag: string,
-        name: string,
-      ): Promise<number | null> => {
+      const authForTag = async (tag: string): Promise<TagAuth> => {
         const list = await credentialList();
         if (!list) return null;
         byTag ??= credentialsByTag(list, config.credentialTagPrefixes);
         const id = byTag.get(tag.toLowerCase());
-        if (id === undefined) {
-          result.errors.push(
-            `${name}: no Termix credential is tagged "${tag}"`,
-          );
-          return null;
-        }
-        return id;
+        // No credential with that tag: a user without (say) their own
+        // termix:localsshkey yet gets an empty username and password.
+        return id === undefined
+          ? { authType: "password" }
+          : { authType: "credential", credentialId: id };
       };
       /**
        * Whether a credential id is missing from Termix. A host that points at
@@ -348,8 +371,8 @@ export function createSyncer({ ctx, store }: SyncDeps) {
             continue;
           }
 
-          const credentialId = desired.credentialTag
-            ? await credentialFor(desired.credentialTag, base.name)
+          const tagAuth = desired.credentialTag
+            ? await authForTag(desired.credentialTag)
             : null;
 
           const link = linkByKey.get(key);
@@ -365,7 +388,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
           }
 
           if (!host) {
-            const input = planCreate(desired, config, credentialId);
+            const input = planCreate(desired, config, tagAuth);
             if (
               input.authType === "credential" &&
               typeof input.credentialId === "number" &&
@@ -405,7 +428,7 @@ export function createSyncer({ ctx, store }: SyncDeps) {
             host,
             desired,
             link?.managedTags ?? [],
-            credentialId,
+            tagAuth,
           );
           if (!dryRun) {
             if (changes.length) await ctx.hosts.update(host.id, patch);

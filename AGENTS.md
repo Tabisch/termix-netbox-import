@@ -70,7 +70,9 @@ aren't obvious from the code, and anything that has bitten you before.
 - Credential tags: a NetBox tag starting with one of `credentialTagPrefixes` (default `dashlane:`,
   `termix:`; `termix:localsshkey` is the per-user key convention) sets the host's
   credential to the Termix credential carrying a tag of the same name (case-insensitive), on create and on
-  every update. No tag leaves auth alone. ctx.credentials only lists SSH keys without tags, so
+  every update (`TagAuth` in sync.ts). A tag no credential has gives password auth with an empty username
+  (no password field exists in the host API), switched only from another auth type so typed-in logins
+  stay. No tag leaves auth alone. ctx.credentials only lists SSH keys without tags, so
   `core-credentials.ts` reads core's `GET /credentials` on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
   (engine api 1.3), once per sync and only when some object has such a tag. Failures go in `errors`, never
   fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets. Configs saved before

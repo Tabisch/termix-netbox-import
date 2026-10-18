@@ -236,10 +236,7 @@ describe("netbox-sync routes", () => {
     });
     await configure();
     const first = await request("POST", "/sync");
-    expect(first.body).toMatchObject({ created: 3 });
-    expect(first.body.errors).toEqual([
-      'web-2: no Termix credential is tagged "dashlane:99999999-0000-4000-8000-000000000000"',
-    ]);
+    expect(first.body).toMatchObject({ created: 3, errors: [] });
     const tokens = mock.auth.userTokens;
     expect(tokens).toHaveLength(1);
     expect(tokens[0]).toMatchObject({ userId: "user-1" });
@@ -250,10 +247,11 @@ describe("netbox-sync routes", () => {
       credentialId: 41,
       username: "",
     });
-    // An unknown tag leaves the host on the defaults.
+    // A tag no credential has gives an empty username and password.
     expect(hosts.find((h) => h.name === "web-2")).toMatchObject({
-      authType: "none",
+      authType: "password",
       credentialId: null,
+      username: "",
     });
 
     // Tagging an existing host in NetBox switches it to the credential.
@@ -267,7 +265,7 @@ describe("netbox-sync routes", () => {
     expect(second.body.entries).toContainEqual(
       expect.objectContaining({
         hostId: web2.id,
-        changes: ["tags", "credential"],
+        changes: ["tags", "auth"],
       }),
     );
     expect((await owned()).find((h) => h.id === web2.id)).toMatchObject({

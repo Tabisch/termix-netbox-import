@@ -311,12 +311,36 @@ describe("credential tags", () => {
           notes: null,
         },
         config,
-        7,
+        { authType: "credential", credentialId: 7 },
       ),
     ).toMatchObject({
       username: "",
       authType: "credential",
       credentialId: 7,
+      overrideCredentialUsername: false,
+    });
+  });
+
+  it("creates with an empty username and password when no credential has the tag", () => {
+    expect(
+      planCreate(
+        {
+          name: "web-1",
+          ip: "10.0.0.5",
+          port: null,
+          username: null,
+          folder: "",
+          managedTags: [],
+          credentialTag: "termix:localsshkey",
+          notes: null,
+        },
+        { ...config, authType: "credential", credentialId: 4 },
+        { authType: "password" },
+      ),
+    ).toMatchObject({
+      username: "",
+      authType: "password",
+      credentialId: null,
       overrideCredentialUsername: false,
     });
   });
@@ -343,21 +367,37 @@ describe("credential tags", () => {
       credentialId: null,
       overrideCredentialUsername: false,
     } as never;
-    expect(planUpdate(host, desired, [], 7)).toEqual({
+    const tagged = { authType: "credential", credentialId: 7 } as const;
+    expect(planUpdate(host, desired, [], tagged)).toEqual({
       patch: {
         authType: "credential",
         credentialId: 7,
         overrideCredentialUsername: false,
       },
-      changes: ["credential"],
+      changes: ["auth"],
     });
     const already = Object.assign({}, host, {
       authType: "credential",
       credentialId: 7,
     });
-    expect(planUpdate(already, desired, [], 7).changes).toEqual([]);
-    // Without a tagged credential the host's auth is left alone.
+    expect(planUpdate(already, desired, [], tagged).changes).toEqual([]);
+    // Without a tag the host's auth is left alone.
     expect(planUpdate(host, desired, [], null).changes).toEqual([]);
+
+    // The tagged credential is gone: back to an empty username and password.
+    expect(planUpdate(already, desired, [], { authType: "password" })).toEqual({
+      patch: {
+        authType: "password",
+        credentialId: null,
+        overrideCredentialUsername: false,
+        username: "",
+      },
+      changes: ["auth"],
+    });
+    // A host already on password auth keeps what the user typed in.
+    expect(
+      planUpdate(host, desired, [], { authType: "password" }).changes,
+    ).toEqual([]);
   });
 });
 

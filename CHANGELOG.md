@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0
+
+### Changed
+
+- A credential tag that matches none of your credentials, like `termix:localsshkey` for a user who has no such key yet, now gives the host password authentication with an empty username and password instead of an error. A host already on password authentication keeps what was typed in, and adding the credential later switches the host to it
+
 ## 1.5.0
 
 ### Added
