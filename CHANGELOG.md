@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.2
+
+### Fixed
+
+- Saving settings that Termix refused showed only "Something went wrong.", for example when the SSH key under New hosts had been deleted. The message now names each setting to fix and why, like "SSH key: This SSH key doesn't exist any more"
+
 ## 1.6.1
 
 ### Fixed

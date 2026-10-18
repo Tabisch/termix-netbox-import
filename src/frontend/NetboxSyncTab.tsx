@@ -228,13 +228,33 @@ export function createNetboxSyncTab(app: TermixApp) {
 
     const fail = (error: unknown) => {
       const failure = readFailure(error);
-      if (Object.keys(failure.fieldErrors).length) {
+      const fields = Object.entries(failure.fieldErrors);
+      if (fields.length) {
         setErrors(failure.fieldErrors);
+        // Name each field: one can sit in a section scrolled out of view,
+        // like a deleted SSH key under New hosts.
+        toast.error(
+          t("errors.invalidSettings", {
+            detail: fields
+              .map(
+                ([field, code]) =>
+                  `${t(`fields.${field}.label`, { defaultValue: field })}: ${t(
+                    `errors.${code}`,
+                    { defaultValue: code },
+                  )}`,
+              )
+              .join(" "),
+          }),
+        );
+        return;
       }
-      const known = t(`errors.${failure.code}`, {
-        defaultValue: "",
-        detail: failure.detail,
-      });
+      const known =
+        failure.code === "unknown"
+          ? ""
+          : t(`errors.${failure.code}`, {
+              defaultValue: "",
+              detail: failure.detail,
+            });
       toast.error(known || failure.message || t("errors.unknown"));
     };
 

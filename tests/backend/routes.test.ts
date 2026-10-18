@@ -138,6 +138,7 @@ describe("netbox-sync routes", () => {
       config: { netboxUrl: "not a url", port: 99999 },
     });
     expect(status).toBe(400);
+    expect(body.code).toBe("invalidSettings");
     expect(body.errors).toEqual({
       netboxUrl: "invalidUrl",
       port: "invalidPort",
