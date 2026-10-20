@@ -366,6 +366,32 @@ describe("netbox-sync routes", () => {
     expect(createdCredentials).toHaveLength(1);
   });
 
+  it("moves hosts to another credential the user tagged instead of the one it made", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: localKeyTags,
+    });
+    await configure();
+    await request("POST", "/sync");
+    expect(createdCredentials).toHaveLength(1);
+
+    // The user deletes the empty credential and tags a password manager's.
+    coreCredentials.body = [
+      { id: 60, name: "LDAP", tags: ["dashlane", "termix:localsshkey"] },
+    ];
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({
+      updated: 1,
+      credentialsCreated: 0,
+      errors: [],
+    });
+    expect(createdCredentials).toHaveLength(1);
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "credential",
+      credentialId: 60,
+    });
+  });
+
   it("switches an existing host to the credential it makes", async () => {
     await configure();
     await request("POST", "/sync");
