@@ -89,6 +89,10 @@
       "label": "Password login when no credential matches",
       "description": "A host whose credential tag matches none of your credentials, or a new host whose SSH key under New hosts was deleted, gets password authentication with an empty username and password, for you to fill in. Off, the sync lists it as an error: the host keeps its authentication, or a new one is skipped."
     },
+    "createTermixCredentials": {
+      "label": "Create credentials for termix: tags",
+      "description": "A termix: tag that matches none of your credentials, like termix:localsshkey, makes one for you: a password credential named after the rest of the tag (localsshkey), with an empty username and password and the tag itself. The hosts with that tag get it, so you fill in the login once, or change it to your SSH key, for all of them. If Termix refuses to create it, Password login when no credential matches applies."
+    },
     "folderSource": {
       "label": "Folder",
       "fixed": "One folder",
@@ -186,6 +190,7 @@
     "skipped": "Skipped",
     "missing": "Missing",
     "deleted": "Deleted",
+    "credentialsCreated": "Credentials created",
     "errors": "Errors",
     "empty": "Nothing to change.",
     "kind": {

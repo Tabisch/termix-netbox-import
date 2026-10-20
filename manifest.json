@@ -1,7 +1,7 @@
 {
   "id": "netbox-sync",
   "name": "NetBox Sync",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "Keep Termix hosts in sync with the devices, virtual machines and IP addresses in NetBox, filtered by tags.",
   "author": {
     "name": "tabisch",
@@ -20,7 +20,8 @@
     "Sync on a schedule, update changed hosts and tag, keep or delete removed ones",
     "Remove old entries automatically after a grace period",
     "Folders from site, role, tenant, platform or cluster",
-    "Assign credentials to hosts with NetBox tags, like dashlane:<id> or termix:localsshkey"
+    "Assign credentials to hosts with NetBox tags, like dashlane:<id> or termix:localsshkey",
+    "Create empty credentials for termix: tags no credential has yet"
   ],
   "env": [
     {

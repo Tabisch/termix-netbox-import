@@ -30,6 +30,9 @@ let server: http.Server;
 let port: number;
 /** What core's GET /credentials answers, standing in for Termix. */
 let coreCredentials: { status: number; body: unknown };
+/** Every POST /credentials body, and what core answers it with. */
+let createdCredentials: Array<Record<string, unknown>>;
+let createStatus: number;
 /** What ctx.credentials.listSshKeys answers. */
 let sshKeys: Array<{ id: number; name: string }>;
 
@@ -37,6 +40,8 @@ const CORE_URL = "http://127.0.0.1:30001";
 
 async function start(permissions = ["netbox-sync.use"]) {
   coreCredentials = { status: 200, body: [] };
+  createdCredentials = [];
+  createStatus = 201;
   sshKeys = [{ id: 7, name: "deploy" }];
   db = await createTestDb(pluginDir);
   db.sqlite
@@ -65,12 +70,24 @@ async function start(permissions = ["netbox-sync.use"]) {
       username: null,
       publicKey: null,
     })),
-    fetch: async (url, init) =>
-      url.startsWith(CORE_URL)
-        ? new Response(JSON.stringify(coreCredentials.body), {
-            status: coreCredentials.status,
-          })
-        : netbox.fetch(url, init),
+    fetch: async (url, init) => {
+      if (!url.startsWith(CORE_URL)) return netbox.fetch(url, init);
+      if (init?.method === "POST") {
+        const input = JSON.parse(String(init.body));
+        createdCredentials.push(input);
+        if (createStatus !== 201) {
+          return new Response(JSON.stringify({ error: "Permission denied" }), {
+            status: createStatus,
+          });
+        }
+        const id = 100 + createdCredentials.length;
+        (coreCredentials.body as unknown[]).push({ id, ...input });
+        return new Response(JSON.stringify({ id }), { status: 201 });
+      }
+      return new Response(JSON.stringify(coreCredentials.body), {
+        status: coreCredentials.status,
+      });
+    },
   });
   await activate(mock.ctx);
 
@@ -283,9 +300,13 @@ describe("netbox-sync routes", () => {
         { name: "termix:localsshkey", slug: "termixlocalsshkey" },
       ],
     });
-    await configure({ passwordWithoutCredential: false });
+    await configure({
+      passwordWithoutCredential: false,
+      createTermixCredentials: false,
+    });
     const { body } = await request("POST", "/sync");
     expect(body.created).toBe(3);
+    expect(createdCredentials).toHaveLength(0);
     expect(body.errors).toEqual([
       'web-1: no Termix credential is tagged "termix:localsshkey"',
     ]);
@@ -293,6 +314,125 @@ describe("netbox-sync routes", () => {
       authType: "none",
       username: "root",
     });
+  });
+
+  const localKeyTags = [
+    { name: "termix", slug: "termix" },
+    { name: "termix:LocalSshKey", slug: "termixlocalsshkey" },
+  ];
+
+  it("creates one empty credential for a termix: tag no credential has", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: localKeyTags,
+    });
+    netbox.devices[1] = device("web-2", "10.0.0.2", [], {
+      id: 2,
+      tags: localKeyTags,
+    });
+    await configure();
+    const first = await request("POST", "/sync");
+    expect(first.body).toMatchObject({
+      created: 3,
+      credentialsCreated: 1,
+      errors: [],
+    });
+    expect(createdCredentials).toEqual([
+      expect.objectContaining({
+        name: "LocalSshKey",
+        tags: ["termix:LocalSshKey"],
+        authType: "password",
+        username: "",
+        password: "",
+      }),
+    ]);
+    expect(mock.auth.userTokens).toHaveLength(1);
+    const hosts = await owned();
+    for (const name of ["web-1", "web-2"]) {
+      expect(hosts.find((h) => h.name === name)).toMatchObject({
+        authType: "credential",
+        credentialId: 101,
+        username: "",
+      });
+    }
+
+    // The next sync finds the credential it made and makes no other.
+    const second = await request("POST", "/sync");
+    expect(second.body).toMatchObject({
+      unchanged: 3,
+      credentialsCreated: 0,
+      errors: [],
+    });
+    expect(createdCredentials).toHaveLength(1);
+  });
+
+  it("switches an existing host to the credential it makes", async () => {
+    await configure();
+    await request("POST", "/sync");
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: localKeyTags,
+    });
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ updated: 1, credentialsCreated: 1 });
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "credential",
+      credentialId: 101,
+    });
+  });
+
+  it("makes no credential in a preview, but counts it", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: localKeyTags,
+    });
+    await configure();
+    const { body } = await request("POST", "/preview");
+    expect(body).toMatchObject({
+      created: 3,
+      credentialsCreated: 1,
+      errors: [],
+    });
+    expect(createdCredentials).toHaveLength(0);
+    expect(await owned()).toHaveLength(0);
+  });
+
+  it("falls back to an empty password login when Termix refuses to make the credential", async () => {
+    createStatus = 403;
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: localKeyTags,
+    });
+    netbox.devices[1] = device("web-2", "10.0.0.2", [], {
+      id: 2,
+      tags: localKeyTags,
+    });
+    await configure();
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ created: 3, credentialsCreated: 0 });
+    expect(body.errors).toEqual([
+      'Credential for "termix:LocalSshKey": Termix refused to create a credential (403: Permission denied)',
+    ]);
+    // Tried once per tag, not once per host.
+    expect(createdCredentials).toHaveLength(1);
+    expect((await owned()).find((h) => h.name === "web-1")).toMatchObject({
+      authType: "password",
+      credentialId: null,
+    });
+  });
+
+  it("makes no credential for other prefixes", async () => {
+    netbox.devices[0] = device("web-1", "10.0.0.1", [], {
+      id: 1,
+      tags: [
+        { name: "termix", slug: "termix" },
+        { name: "dashlane:abc", slug: "dashlaneabc" },
+      ],
+    });
+    await configure();
+    const { body } = await request("POST", "/sync");
+    expect(body).toMatchObject({ credentialsCreated: 0, errors: [] });
+    expect(createdCredentials).toHaveLength(0);
   });
 
   it("refuses to save an SSH key that doesn't exist", async () => {

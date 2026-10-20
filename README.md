@@ -41,7 +41,8 @@ Pick the credential a host connects with in NetBox. Put a tag on the device, VM 
 | `dashlane:<Dashlane id>` | A login the [Dashlane plugin](https://github.com/Tabisch/termix-dashlane-secrets) imported. Its tab shows each credential's tag, and the id never changes |
 | `termix:localsshkey`     | Each user's own credential tagged `termix:localsshkey` in their Termix, so one NetBox tag gives everyone their own key. Any name after `termix:` works    |
 
-- If none of the user's credentials has the tag, the host gets password authentication with an empty username and password to fill in. Turn off Password login when no credential matches to report it as an error and keep the host's authentication instead.
+- If none of the user's credentials has a `termix:` tag, the sync makes one: a password credential named after the rest of the tag, with an empty username and password and the tag, so the user fills it in once for every host with that tag. Turn off Create credentials for termix: tags to skip that.
+- Otherwise, if none of the user's credentials has the tag, the host gets password authentication with an empty username and password to fill in. Turn off Password login when no credential matches to report it as an error and keep the host's authentication instead.
 - Removing the tag in NetBox leaves the host's authentication as it is.
 - The prefixes are a list in the tab, `dashlane:` and `termix:` to start with. Remove them all to turn the feature off.
 - Looking credentials up needs Termix's View credentials permission.
@@ -107,16 +108,16 @@ npx termix-plugin dev --server http://localhost:30001 --key tmx_your_key
 
 ### How it is put together
 
-| File                              | What it does                                                   |
-| --------------------------------- | -------------------------------------------------------------- |
-| `src/backend/netbox.ts`           | NetBox REST client: auth, paging, tag and status filters       |
-| `src/backend/mapping.ts`          | Turns a NetBox object into host fields, merges tags            |
-| `src/backend/sync.ts`             | The sync: create, update, link, tag or delete, and the dry run |
-| `src/backend/core-credentials.ts` | Reads the user's Termix credentials and their tags             |
-| `src/backend/store.ts`            | The settings and link tables                                   |
-| `src/backend/routes.ts`           | `/plugin-api/netbox-sync/` routes                              |
-| `src/backend/index.ts`            | Activation and the auto sync scheduler                         |
-| `src/frontend/NetboxSyncTab.tsx`  | The NetBox Sync tab                                            |
+| File                              | What it does                                                         |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `src/backend/netbox.ts`           | NetBox REST client: auth, paging, tag and status filters             |
+| `src/backend/mapping.ts`          | Turns a NetBox object into host fields, merges tags                  |
+| `src/backend/sync.ts`             | The sync: create, update, link, tag or delete, and the dry run       |
+| `src/backend/core-credentials.ts` | Reads the user's Termix credentials and their tags, makes empty ones |
+| `src/backend/store.ts`            | The settings and link tables                                         |
+| `src/backend/routes.ts`           | `/plugin-api/netbox-sync/` routes                                    |
+| `src/backend/index.ts`            | Activation and the auto sync scheduler                               |
+| `src/frontend/NetboxSyncTab.tsx`  | The NetBox Sync tab                                                  |
 
 <br />
 

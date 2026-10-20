@@ -49,6 +49,13 @@ export interface SyncConfig {
    * empty username and password. Off, it is reported and auth is left alone.
    */
   passwordWithoutCredential: boolean;
+  /**
+   * A termix: credential tag no credential has makes one: a password
+   * credential named after the rest of the tag, with an empty username and
+   * password and the tag itself, for the user to fill in. Wins over
+   * passwordWithoutCredential, which still applies when that fails.
+   */
+  createTermixCredentials: boolean;
   folderSource: FolderSource;
   folder: string;
   /** Custom fields that override the port and username per object. */
@@ -72,6 +79,8 @@ export interface SyncConfig {
 }
 
 export const MISSING_TAG = "netbox-missing";
+/** Credential tags with this prefix get a credential made when none has them. */
+export const TERMIX_CREDENTIAL_PREFIX = "termix:";
 export const MIN_INTERVAL_MINUTES = 5;
 export const MAX_INTERVAL_MINUTES = 7 * 24 * 60;
 export const MAX_REMOVE_AFTER_DAYS = 365;
@@ -92,6 +101,7 @@ export const DEFAULT_CONFIG: SyncConfig = {
   credentialId: null,
   credentialTagPrefixes: ["dashlane:", "termix:"],
   passwordWithoutCredential: true,
+  createTermixCredentials: true,
   folderSource: "site",
   folder: "NetBox",
   portCustomField: "",
@@ -194,6 +204,10 @@ export function normalizeConfig(input: unknown): SyncConfig {
     passwordWithoutCredential: bool(
       raw.passwordWithoutCredential,
       d.passwordWithoutCredential,
+    ),
+    createTermixCredentials: bool(
+      raw.createTermixCredentials,
+      d.createTermixCredentials,
     ),
     folderSource: oneOf(raw.folderSource, FOLDER_SOURCES, d.folderSource),
     folder: str(raw.folder, d.folder),
