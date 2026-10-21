@@ -73,8 +73,13 @@ aren't obvious from the code, and anything that has bitten you before.
   every update (`TagAuth` in sync.ts). A tag no credential has gives (with `passwordWithoutCredential`, default on; off reports it in
   `errors` and leaves auth alone) password auth with an empty username
   (no password field exists in the host API), switched only from another auth type so typed-in logins
-  stay. No tag leaves auth alone. ctx.credentials only lists SSH keys without tags, so
-  `core-credentials.ts` reads core's `GET /credentials` on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
+  stay. Before that, a `termix:` tag no credential has makes one (`createTermixCredentials`, default on):
+  `coreCredentialsFor().createEmpty` POSTs a password credential named after the tag suffix, empty username
+  and password, tagged with the tag itself, once per tag per sync (a failure is in `errors` and falls back to
+  the above). A preview counts it in `credentialsCreated` with the placeholder id 0 and writes nothing.
+  `dashlane:` tags never make one: the Dashlane plugin owns those. No tag leaves auth alone.
+  ctx.credentials only lists SSH keys without tags, so `core-credentials.ts` reads core's `GET /credentials`
+  (one token per sync, shared with the create) on `127.0.0.1:30001` with `ctx.auth.issueUserToken`
   (engine api 1.3), once per sync and only when some object has such a tag. Failures go in `errors`, never
   fail the sync. The `dashlane:<id>` tags come from Tabisch/termix-dashlane-secrets. Configs saved before
   1.5.0 hold a single `credentialTagPrefix`; `normalizeConfig` maps the old default to the new list.

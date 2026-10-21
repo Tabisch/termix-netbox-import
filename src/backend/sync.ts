@@ -4,10 +4,14 @@ import type {
   PluginHostRecord,
   PluginHostUpdateInput,
 } from "@termix-ssh/plugin-sdk/backend";
-import { MISSING_TAG, type SyncConfig } from "./config.js";
 import {
+  MISSING_TAG,
+  TERMIX_CREDENTIAL_PREFIX,
+  type SyncConfig,
+} from "./config.js";
+import {
+  coreCredentialsFor,
   credentialsByTag,
-  listCoreCredentials,
   type CoreCredential,
 } from "./core-credentials.js";
 import {
@@ -48,6 +52,8 @@ export interface SyncResult {
   skipped: number;
   missing: number;
   deleted: number;
+  /** Empty credentials made for termix: tags (or that would be, in a preview). */
+  credentialsCreated?: number;
   errors: string[];
   /** Every planned change. Sent back from a preview or sync, never stored. */
   entries?: PlanEntry[];
@@ -74,6 +80,7 @@ function emptyResult(dryRun: boolean): SyncResult {
     skipped: 0,
     missing: 0,
     deleted: 0,
+    credentialsCreated: 0,
     errors: [],
     entries: [],
   };
@@ -317,15 +324,50 @@ export function createSyncer({ ctx, store }: SyncDeps) {
 
       // Termix's credentials, read once, and only when a credential tag needs
       // resolving or a new host is about to get a credential.
+      const core = coreCredentialsFor(ctx, userId);
       let coreCredentials: Promise<CoreCredential[] | null> | null = null;
       const credentialList = () =>
-        (coreCredentials ??= listCoreCredentials(ctx, userId).catch((error) => {
+        (coreCredentials ??= core.list().catch((error) => {
           result.errors.push(
             `Credentials: ${errorText(error)}. Credential tags are ignored.`,
           );
           return null;
         }));
       let byTag: Map<string, number> | null = null;
+      /** Credentials made this sync, by tag (lower case). Null when that failed. */
+      const made = new Map<string, Promise<number | null>>();
+      /** A preview makes nothing, so a credential it would make has no id. */
+      const PLANNED_ID = 0;
+      const makeCredential = (tag: string): Promise<number | null> => {
+        const key = tag.toLowerCase();
+        let pending = made.get(key);
+        if (!pending) {
+          const name = tag.slice(TERMIX_CREDENTIAL_PREFIX.length).trim();
+          pending = (
+            dryRun
+              ? Promise.resolve(PLANNED_ID)
+              : core.createEmpty({ name, tags: [tag] })
+          ).then(
+            (id) => {
+              result.credentialsCreated!++;
+              if (!dryRun) {
+                ctx.log.info(
+                  `NetBox sync for ${userId}: made credential ${id} for "${tag}"`,
+                );
+              }
+              return id;
+            },
+            (error) => {
+              result.errors.push(
+                `Credential for "${tag}": ${errorText(error)}`,
+              );
+              return null;
+            },
+          );
+          made.set(key, pending);
+        }
+        return pending;
+      };
       const authForTag = async (
         tag: string,
         name: string,
@@ -336,8 +378,18 @@ export function createSyncer({ ctx, store }: SyncDeps) {
         const id = byTag.get(tag.toLowerCase());
         if (id !== undefined)
           return { authType: "credential", credentialId: id };
-        // No credential with that tag: a user without (say) their own
-        // termix:localsshkey yet gets an empty username and password.
+        // No credential with that tag. A termix: one gets an empty credential
+        // carrying the tag, for the user to fill in once for every host.
+        if (
+          config.createTermixCredentials &&
+          tag.toLowerCase().startsWith(TERMIX_CREDENTIAL_PREFIX)
+        ) {
+          const created = await makeCredential(tag);
+          if (created !== null)
+            return { authType: "credential", credentialId: created };
+        }
+        // Otherwise a user without (say) their own termix:localsshkey yet gets
+        // an empty username and password.
         if (config.passwordWithoutCredential) return { authType: "password" };
         result.errors.push(`${name}: no Termix credential is tagged "${tag}"`);
         return null;
@@ -348,9 +400,13 @@ export function createSyncer({ ctx, store }: SyncDeps) {
        * (false) when the list can't be read.
        */
       const credentialGone = async (id: number): Promise<boolean> => {
+        if (await isMade(id)) return false;
         const list = await credentialList();
         return !!list && !list.some((credential) => credential.id === id);
       };
+
+      const isMade = async (id: number) =>
+        (await Promise.all(made.values())).includes(id);
 
       const seen = new Set<string>();
       for (const item of items) {

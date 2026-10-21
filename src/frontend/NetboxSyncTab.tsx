@@ -129,6 +129,12 @@ function ResultView({
         {COUNTS.map((key) => (
           <StatRow key={key} label={t(`result.${key}`)} value={result[key]} />
         ))}
+        {!!result.credentialsCreated && (
+          <StatRow
+            label={t("result.credentialsCreated")}
+            value={result.credentialsCreated}
+          />
+        )}
       </div>
       {result.errors.length > 0 && (
         <div className="flex flex-col gap-1 border border-destructive/40 p-2 text-xs text-destructive">
@@ -611,6 +617,12 @@ export function createNetboxSyncTab(app: TermixApp) {
                 description={t("fields.passwordWithoutCredential.description")}
                 checked={config.passwordWithoutCredential}
                 onChange={(value) => update("passwordWithoutCredential", value)}
+              />
+              <SwitchRow
+                label={t("fields.createTermixCredentials.label")}
+                description={t("fields.createTermixCredentials.description")}
+                checked={config.createTermixCredentials}
+                onChange={(value) => update("createTermixCredentials", value)}
               />
               <FieldPair>
                 <SelectField
